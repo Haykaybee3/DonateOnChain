@@ -33,6 +33,13 @@ Uses Hedera pre-compiled system contracts:
 - **HTS (0x167)**: Mint NFTs via Hedera Token Service
 - **HCS (0x169)**: Log donations to Hedera Consensus Service
 
+### Hedera Native Resources
+
+| Resource | ID | Purpose | Explorer |
+|----------|-----|---------|----------|
+| NFT Token | `0.0.7147268` | Proof-of-donation NFTs | [View on Hashscan](https://hashscan.io/testnet/token/0.0.7147268) |
+| HCS Topic | `0.0.7147267` | Immutable donation logging | [View on Hashscan](https://hashscan.io/testnet/topic/0.0.7147267) |
+
 ## Quick Start
 
 ### Prerequisites
@@ -46,12 +53,13 @@ forge install
 
 1. **Deploy Registries:**
 ```bash
-forge script script/DeployRegistries.s.sol:DeployRegistries --rpc-url $ARKHIA_API_URL --broadcast --private-key $PRIVATE_KEY
+forge script script/DeployRegistries.s.sol:DeployRegistries --rpc-url $RPC_URL --broadcast --slow
 ```
 
-2. **Deploy Campaign System:**
+2. **Configure Hedera Resources:**
+Add `NFT_TOKEN_ID` and `HCS_TOPIC_ID` to your `.env` file, then:
 ```bash
-forge script script/DeployCampaignSystem.s.sol:DeployCampaignSystem --rpc-url $ARKHIA_API_URL --broadcast --private-key $PRIVATE_KEY
+forge script script/ConfigureContracts.s.sol:ConfigureContracts --rpc-url $RPC_URL --broadcast --slow
 ```
 
 ## Testing
@@ -62,7 +70,7 @@ forge test
 
 ## Documentation
 
-- **`ROLES_AND_FUNCTIONS.md`** - Complete reference for roles, functions, privileges, and role interactions
+- **`Guide.md`** - Complete reference for roles, functions, privileges, and role interactions
 
 ## Project Structure
 
@@ -81,14 +89,14 @@ src/
 
 script/
 ├── DeployRegistries.s.sol
-├── DeployCampaignSystem.s.sol
+├── ConfigureContracts.s.sol
 ├── SetupTestCampaigns.s.sol
-├── AddAdmins.s.sol
 └── InteractDonation.s.sol
 
 test/
 ├── AdminRegistry.t.sol
-└── DonationManager.t.sol
+├── DonationManager.t.sol
+└── FullFlow.t.sol
 ```
 
 ## Security
