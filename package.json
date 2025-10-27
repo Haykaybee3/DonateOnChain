@@ -1,0 +1,12 @@
+{
+  "name": "donate-onchain",
+  "version": "1.0.0",
+  "description": "Hedera donation contract with NFT proof-of-donation",
+  "scripts": {
+    "setup-hedera": "node setup/setup-hedera.js"
+  },
+  "devDependencies": {
+    "@hashgraph/sdk": "^2.39.0",
+    "dotenv": "^17.2.3"
+  }
+}

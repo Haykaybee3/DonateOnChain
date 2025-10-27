@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DonateOnchain - On-chain Donations</title>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>DonateOnchain</h1>
+            <button id="connectWallet">Connect Wallet</button>
+        </header>
+        
+        <main>
+            <h2>Active Campaigns</h2>
+            <div id="campaigns"></div>
+        </main>
+    </div>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="src/contracts/addresses.js"></script>
+    <script src="src/app.js"></script>
+</body>
+</html>
