@@ -7,7 +7,7 @@ import {Errors} from "./Errors.sol";
 
 contract ProofNFT is Ownable {
     address public immutable HTS_PRECOMPILE = address(0x167);
-    
+
     IHederaTokenService private htsService;
     address public nftTokenId;
     address public donationManager;
@@ -44,12 +44,11 @@ contract ProofNFT is Ownable {
         emit DonationManagerSet(oldManager, manager);
     }
 
-    function mintDonationNFT(
-        address donor,
-        uint256 campaignId,
-        uint256 amount,
-        string calldata metadataHash
-    ) external onlyDonationManager returns (uint256) {
+    function mintDonationNFT(address donor, uint256 campaignId, uint256 amount, string calldata metadataHash)
+        external
+        onlyDonationManager
+        returns (uint256)
+    {
         if (nftTokenId == address(0)) revert Errors.InvalidTokenId(address(0));
         if (donor == address(0)) revert Errors.InvalidAddress(donor);
         if (bytes(metadataHash).length == 0) revert Errors.EmptyMetadata();
@@ -58,25 +57,24 @@ contract ProofNFT is Ownable {
         bytes[] memory metadataArray = new bytes[](1);
         metadataArray[0] = metadata;
 
-        (int64 responseCode, , int64[] memory serialNumbers) = 
-            htsService.mintToken(nftTokenId, 1, metadataArray);
+        (int64 responseCode,, int64[] memory serialNumbers) = htsService.mintToken(nftTokenId, 1, metadataArray);
 
         if (responseCode != 22) {
             revert Errors.MintFailed(responseCode);
         }
 
         uint256 serialNumber = uint256(int256(serialNumbers[0]));
-        
+
         emit ProofOfDonationMinted(donor, campaignId, serialNumber, amount, metadataHash);
 
         return serialNumber;
     }
 
-    function _encodeMetadata(
-        uint256 campaignId,
-        uint256 amount,
-        string calldata metadataHash
-    ) private pure returns (bytes memory) {
+    function _encodeMetadata(uint256 campaignId, uint256 amount, string calldata metadataHash)
+        private
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             "{\"campaignId\":\"",
             _uint2str(campaignId),
@@ -106,4 +104,3 @@ contract ProofNFT is Ownable {
         return string(bstr);
     }
 }
-

@@ -51,12 +51,9 @@ contract CampaignRegistry is Ownable {
         _;
     }
 
-    constructor(
-        address initialOwner,
-        address _adminRegistry,
-        address _fileManager,
-        address _ngoRegistry
-    ) Ownable(initialOwner) {
+    constructor(address initialOwner, address _adminRegistry, address _fileManager, address _ngoRegistry)
+        Ownable(initialOwner)
+    {
         if (_adminRegistry == address(0)) revert Errors.InvalidAddress(_adminRegistry);
         if (_fileManager == address(0)) revert Errors.InvalidAddress(_fileManager);
         if (_ngoRegistry == address(0)) revert Errors.InvalidAddress(_ngoRegistry);
@@ -76,12 +73,12 @@ contract CampaignRegistry is Ownable {
     ) external onlyAdmin returns (uint256) {
         if (ngo == address(0)) revert Errors.InvalidAddress(ngo);
         if (designer == address(0)) revert Errors.InvalidAddress(designer);
-        
+
         uint256 totalBps = ngoShareBps + designerShareBps + platformShareBps;
         if (totalBps != MAX_BPS) {
             revert Errors.InvalidBPSSplit(ngoShareBps, designerShareBps, platformShareBps);
         }
-        
+
         if (!FILE_MANAGER.exists(metadataFileHash)) {
             revert Errors.FileNotStored(metadataFileHash);
         }
@@ -106,14 +103,7 @@ contract CampaignRegistry is Ownable {
         campaignCount++;
 
         emit CampaignCreated(
-            campaignId,
-            ngo,
-            designer,
-            ngoShareBps,
-            designerShareBps,
-            platformShareBps,
-            metadataFileHash,
-            msg.sender
+            campaignId, ngo, designer, ngoShareBps, designerShareBps, platformShareBps, metadataFileHash, msg.sender
         );
 
         return campaignId;
@@ -122,22 +112,26 @@ contract CampaignRegistry is Ownable {
     function deactivateCampaign(uint256 campaignId) external onlyAdmin {
         Campaign storage campaign = campaigns[campaignId];
         if (campaign.ngo == address(0)) revert Errors.CampaignNotFound(campaignId);
-        
+
         campaign.active = false;
         emit CampaignDeactivated(campaignId, msg.sender);
     }
 
-    function getCampaign(uint256 campaignId) external view returns (
-        address ngo,
-        address designer,
-        uint256 ngoShareBps,
-        uint256 designerShareBps,
-        uint256 platformShareBps,
-        bool active
-    ) {
+    function getCampaign(uint256 campaignId)
+        external
+        view
+        returns (
+            address ngo,
+            address designer,
+            uint256 ngoShareBps,
+            uint256 designerShareBps,
+            uint256 platformShareBps,
+            bool active
+        )
+    {
         Campaign storage campaign = campaigns[campaignId];
         if (campaign.ngo == address(0)) revert Errors.CampaignNotFound(campaignId);
-        
+
         return (
             campaign.ngo,
             campaign.designer,
@@ -173,12 +167,12 @@ contract CampaignRegistry is Ownable {
     ) external returns (uint256) {
         if (!NGO_REGISTRY.isVerifiedNGO(msg.sender)) revert Errors.NGONotFound(msg.sender);
         if (designer == address(0)) revert Errors.InvalidAddress(designer);
-        
+
         uint256 totalBps = ngoShareBps + designerShareBps + platformShareBps;
         if (totalBps != MAX_BPS) {
             revert Errors.InvalidBPSSplit(ngoShareBps, designerShareBps, platformShareBps);
         }
-        
+
         if (!FILE_MANAGER.exists(metadataFileHash)) {
             revert Errors.FileNotStored(metadataFileHash);
         }
@@ -228,7 +222,7 @@ contract CampaignRegistry is Ownable {
         if (campaign.ngo != msg.sender && !ADMIN_REGISTRY.isAdmin(msg.sender)) {
             revert Errors.NotAdmin(msg.sender);
         }
-        
+
         campaign.title = title;
         campaign.description = description;
         campaign.imageHash = imageHash;
@@ -241,20 +235,19 @@ contract CampaignRegistry is Ownable {
     function getActiveCampaigns() external view returns (uint256[] memory) {
         uint256[] memory activeCampaigns = new uint256[](campaignCount);
         uint256 count = 0;
-        
+
         for (uint256 i = 0; i < campaignCount; i++) {
             if (campaigns[i].active) {
                 activeCampaigns[count] = i;
                 count++;
             }
         }
-        
+
         uint256[] memory result = new uint256[](count);
         for (uint256 i = 0; i < count; i++) {
             result[i] = activeCampaigns[i];
         }
-        
+
         return result;
     }
 }
-

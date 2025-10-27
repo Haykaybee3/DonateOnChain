@@ -29,23 +29,19 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
     mapping(uint256 => Design) private designs;
     mapping(uint256 => uint256[]) private campaignDesigns;
     mapping(address => uint256[]) private designerDesigns;
-    
+
     uint256 public designCount;
-    
+
     IDesignerRegistry public immutable DESIGNER_REGISTRY;
     ICampaignRegistry public immutable CAMPAIGN_REGISTRY;
     IProofNFT public immutable PROOF_NFT;
     IFileManager public immutable FILE_MANAGER;
     IAdminRegistry public immutable ADMIN_REGISTRY;
-    
+
     address public platformWallet;
 
     event DesignCreated(
-        uint256 indexed designId,
-        address indexed designer,
-        uint256 indexed campaignId,
-        string designName,
-        uint256 price
+        uint256 indexed designId, address indexed designer, uint256 indexed campaignId, string designName, uint256 price
     );
     event DesignPurchased(
         address indexed buyer,
@@ -56,11 +52,7 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
     );
     event DesignDeactivated(uint256 indexed designId);
     event FundsDistributed(
-        uint256 indexed designId,
-        uint256 totalAmount,
-        uint256 ngoAmount,
-        uint256 designerAmount,
-        uint256 platformAmount
+        uint256 indexed designId, uint256 totalAmount, uint256 ngoAmount, uint256 designerAmount, uint256 platformAmount
     );
 
     constructor(
@@ -100,12 +92,12 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         if (price == 0) revert Errors.InvalidPrice(price);
         if (bytes(designName).length == 0 || bytes(description).length == 0) revert Errors.EmptyMetadata();
         if (bytes(designFileHash).length == 0 || bytes(metadataHash).length == 0) revert Errors.EmptyMetadata();
-        
-        (address ngo, , uint256 ngoShareBps, uint256 designerShareBps, uint256 platformShareBps, bool active) = 
+
+        (address ngo,, uint256 ngoShareBps, uint256 designerShareBps, uint256 platformShareBps, bool active) =
             CAMPAIGN_REGISTRY.getCampaign(campaignId);
-        
+
         if (!active) revert Errors.InactiveCampaign(campaignId);
-        
+
         uint256 designId = designCount;
         designs[designId] = Design({
             designId: designId,
@@ -135,14 +127,14 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         Design storage design = designs[designId];
         if (design.designer == address(0)) revert Errors.DesignNotFound(designId);
         if (!design.active) revert Errors.DesignNotActive(designId);
-        
+
         if (msg.value != design.price) {
             revert Errors.InsufficientPayment(design.price, msg.value);
         }
 
-        (address ngo, , uint256 ngoShareBps, uint256 designerShareBps, uint256 platformShareBps, ) = 
+        (address ngo,, uint256 ngoShareBps, uint256 designerShareBps, uint256 platformShareBps,) =
             CAMPAIGN_REGISTRY.getCampaign(design.campaignId);
-        
+
         uint256 ngoAmount = (msg.value * ngoShareBps) / 10000;
         uint256 designerAmount = (msg.value * designerShareBps) / 10000;
         uint256 platformAmount = msg.value - ngoAmount - designerAmount;
@@ -151,12 +143,8 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         _transferHbar(payable(design.designer), designerAmount);
         _transferHbar(payable(platformWallet), platformAmount);
 
-        uint256 nftSerialNumber = PROOF_NFT.mintDonationNFT(
-            msg.sender,
-            design.campaignId,
-            msg.value,
-            design.metadataHash
-        );
+        uint256 nftSerialNumber =
+            PROOF_NFT.mintDonationNFT(msg.sender, design.campaignId, msg.value, design.metadataHash);
 
         design.salesCount++;
 
@@ -169,29 +157,27 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
     function deactivateDesign(uint256 designId) external {
         Design storage design = designs[designId];
         if (design.designer == address(0)) revert Errors.DesignNotFound(designId);
-        
+
         bool isOwner = msg.sender == owner();
         bool isDesigner = design.designer == msg.sender;
         bool isAdmin = ADMIN_REGISTRY.isAdmin(msg.sender);
-        
+
         if (!isOwner && !isDesigner && !isAdmin) {
             revert Errors.NotDesignOwner(msg.sender);
         }
-        
+
         design.active = false;
         emit DesignDeactivated(designId);
     }
 
-    function getDesign(uint256 designId) external view returns (
-        address designer,
-        uint256 campaignId,
-        string memory designName,
-        uint256 price,
-        bool active
-    ) {
+    function getDesign(uint256 designId)
+        external
+        view
+        returns (address designer, uint256 campaignId, string memory designName, uint256 price, bool active)
+    {
         Design storage design = designs[designId];
         if (design.designer == address(0)) revert Errors.DesignNotFound(designId);
-        
+
         return (design.designer, design.campaignId, design.designName, design.price, design.active);
     }
 
@@ -205,8 +191,7 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
 
     function _transferHbar(address payable recipient, uint256 amount) private {
         if (amount == 0) return;
-        (bool success, ) = recipient.call{value: amount}("");
+        (bool success,) = recipient.call{value: amount}("");
         if (!success) revert Errors.TransferFailed(recipient, amount);
     }
 }
-

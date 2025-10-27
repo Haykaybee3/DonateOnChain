@@ -5,4 +5,3 @@ interface IFileManager {
     function getIpfsCid(bytes32 fileHash) external view returns (string memory);
     function exists(bytes32 fileHash) external view returns (bool);
 }
-

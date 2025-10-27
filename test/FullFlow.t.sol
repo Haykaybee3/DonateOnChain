@@ -12,12 +12,9 @@ import {DesignMarketplace} from "../src/DesignMarketplace.sol";
 import {Errors} from "../src/Errors.sol";
 
 interface IProofNFTTest {
-    function mintDonationNFT(
-        address donor,
-        uint256 campaignId,
-        uint256 amount,
-        string calldata metadataHash
-    ) external returns (uint256);
+    function mintDonationNFT(address donor, uint256 campaignId, uint256 amount, string calldata metadataHash)
+        external
+        returns (uint256);
 }
 
 contract MockProofNFT is IProofNFTTest {
@@ -32,12 +29,10 @@ contract MockProofNFT is IProofNFTTest {
         donationManagers[manager] = true;
     }
 
-    function mintDonationNFT(
-        address donor,
-        uint256 campaignId,
-        uint256 amount,
-        string calldata metadataHash
-    ) external returns (uint256) {
+    function mintDonationNFT(address donor, uint256 campaignId, uint256 amount, string calldata metadataHash)
+        external
+        returns (uint256)
+    {
         if (!donationManagers[msg.sender]) revert Errors.NotDonationManager(msg.sender);
         uint256 serial = serialCounter++;
         return serial;
@@ -119,11 +114,7 @@ contract FullFlowTest is Test {
         uint256 nftSerialNumber
     );
     event FundsDistributed(
-        uint256 indexed designId,
-        uint256 totalAmount,
-        uint256 ngoAmount,
-        uint256 designerAmount,
-        uint256 platformAmount
+        uint256 indexed designId, uint256 totalAmount, uint256 ngoAmount, uint256 designerAmount, uint256 platformAmount
     );
 
     function setUp() public {
@@ -138,16 +129,13 @@ contract FullFlowTest is Test {
         ngoRegistry = new NGORegistry(admin, address(adminRegistry));
         designerRegistry = new DesignerRegistry(admin, address(adminRegistry));
         fileManager = new FileManager(admin, address(adminRegistry), address(ngoRegistry), address(designerRegistry));
-        campaignRegistry = new CampaignRegistry(admin, address(adminRegistry), address(fileManager), address(ngoRegistry));
-        
+        campaignRegistry =
+            new CampaignRegistry(admin, address(adminRegistry), address(fileManager), address(ngoRegistry));
+
         proofNFT = new MockProofNFT();
-        donationManager = new DonationManager(
-            admin,
-            address(campaignRegistry),
-            address(proofNFT),
-            address(platformWallet)
-        );
-        
+        donationManager =
+            new DonationManager(admin, address(campaignRegistry), address(proofNFT), address(platformWallet));
+
         designMarketplace = new DesignMarketplace(
             admin,
             address(designerRegistry),
@@ -164,12 +152,7 @@ contract FullFlowTest is Test {
 
     function testFullFlowNGORegistrationAndApproval() public {
         vm.startPrank(ngo);
-        ngoRegistry.registerNGOPending(
-            "Test NGO",
-            "Helping communities",
-            "QmNgoProfile",
-            NGO_METADATA_CID
-        );
+        ngoRegistry.registerNGOPending("Test NGO", "Helping communities", "QmNgoProfile", NGO_METADATA_CID);
         vm.stopPrank();
 
         address[] memory pending = ngoRegistry.getPendingNGOs();
@@ -181,7 +164,7 @@ contract FullFlowTest is Test {
         ngoRegistry.approveNGO(ngo);
 
         assertTrue(ngoRegistry.isVerifiedNGO(ngo));
-        
+
         (address wallet, string memory metadata, bool isActive) = ngoRegistry.getNGO(ngo);
         assertEq(wallet, ngo);
         assertTrue(isActive);
@@ -190,10 +173,7 @@ contract FullFlowTest is Test {
     function testFullFlowDesignerRegistrationAndApproval() public {
         vm.startPrank(designer);
         designerRegistry.registerDesignerPending(
-            "Test Designer",
-            "Creative designer",
-            "QmDesignerPortfolio",
-            "QmDesignerProfile"
+            "Test Designer", "Creative designer", "QmDesignerPortfolio", "QmDesignerProfile"
         );
         vm.stopPrank();
 
@@ -206,7 +186,7 @@ contract FullFlowTest is Test {
         designerRegistry.approveDesigner(designer);
 
         assertTrue(designerRegistry.isVerifiedDesigner(designer));
-        
+
         (address wallet, string memory portfolio, bool isActive) = designerRegistry.getDesigner(designer);
         assertEq(wallet, designer);
         assertTrue(isActive);
@@ -214,35 +194,29 @@ contract FullFlowTest is Test {
 
     function testFullFlowCampaignCreation() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
-        
+
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
-        
+
         vm.expectEmit(true, true, true, false);
         emit CampaignCreated(
-            0,
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH,
-            admin
+            0, ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH, admin
         );
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         assertEq(campaignId, 0);
-        
-        (address campaignNGO, address campaignDesigner, uint256 ngoShare, uint256 designerShare, uint256 platformShare, bool active) = 
-            campaignRegistry.getCampaign(campaignId);
-        
+
+        (
+            address campaignNGO,
+            address campaignDesigner,
+            uint256 ngoShare,
+            uint256 designerShare,
+            uint256 platformShare,
+            bool active
+        ) = campaignRegistry.getCampaign(campaignId);
+
         assertEq(campaignNGO, ngo);
         assertEq(campaignDesigner, designer);
         assertEq(ngoShare, NGO_SHARE_BPS);
@@ -254,28 +228,17 @@ contract FullFlowTest is Test {
     function testFullFlowDesignCreation() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
         designerRegistry.addDesigner(designer, "QmPortfolio");
-        
+
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
         fileManager.storeFileHashAdmin(DESIGN_FILE_HASH, DESIGN_FILE_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         vm.prank(designer);
         vm.expectEmit(true, true, true, false);
-        emit DesignCreated(
-            0,
-            designer,
-            campaignId,
-            "Test Design",
-            100 ether
-        );
+        emit DesignCreated(0, designer, campaignId, "Test Design", 100 ether);
 
         uint256 designId = designMarketplace.createDesign(
             campaignId,
@@ -288,10 +251,10 @@ contract FullFlowTest is Test {
         );
 
         assertEq(designId, 0);
-        
-        (address designDesigner, uint256 designCampaignId, string memory name, uint256 price, bool active) = 
+
+        (address designDesigner, uint256 designCampaignId, string memory name, uint256 price, bool active) =
             designMarketplace.getDesign(designId);
-        
+
         assertEq(designDesigner, designer);
         assertEq(designCampaignId, campaignId);
         assertEq(keccak256(bytes(name)), keccak256(bytes("Test Design")));
@@ -302,16 +265,11 @@ contract FullFlowTest is Test {
     function testFullFlowCustomerDonatesToCampaign() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
         designerRegistry.addDesigner(designer, "QmPortfolio");
-        
+
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         uint256 donationAmount = 1000 ether;
@@ -343,17 +301,12 @@ contract FullFlowTest is Test {
     function testFullFlowCustomerBuysDesign() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
         designerRegistry.addDesigner(designer, "QmPortfolio");
-        
+
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
         fileManager.storeFileHashAdmin(DESIGN_FILE_HASH, DESIGN_FILE_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         vm.prank(designer);
@@ -376,22 +329,10 @@ contract FullFlowTest is Test {
 
         vm.prank(customer);
         vm.expectEmit(true, true, true, true);
-        emit DesignPurchased(
-            customer,
-            designId,
-            campaignId,
-            buyAmount,
-            1
-        );
+        emit DesignPurchased(customer, designId, campaignId, buyAmount, 1);
 
         vm.expectEmit(true, true, true, true);
-        emit FundsDistributed(
-            designId,
-            buyAmount,
-            70 ether,
-            20 ether,
-            10 ether
-        );
+        emit FundsDistributed(designId, buyAmount, 70 ether, 20 ether, 10 ether);
 
         uint256 nftSerial = designMarketplace.purchaseDesign{value: buyAmount}(designId);
 
@@ -403,12 +344,7 @@ contract FullFlowTest is Test {
 
     function testFullFlowCompleteFlow() public {
         vm.startPrank(ngo);
-        ngoRegistry.registerNGOPending(
-            "Test NGO",
-            "Helping communities",
-            "QmNgoProfile",
-            NGO_METADATA_CID
-        );
+        ngoRegistry.registerNGOPending("Test NGO", "Helping communities", "QmNgoProfile", NGO_METADATA_CID);
         vm.stopPrank();
 
         ngoRegistry.approveNGO(ngo);
@@ -416,10 +352,7 @@ contract FullFlowTest is Test {
 
         vm.startPrank(designer);
         designerRegistry.registerDesignerPending(
-            "Test Designer",
-            "Creative designer",
-            "QmDesignerPortfolio",
-            "QmDesignerProfile"
+            "Test Designer", "Creative designer", "QmDesignerPortfolio", "QmDesignerProfile"
         );
         vm.stopPrank();
 
@@ -428,14 +361,9 @@ contract FullFlowTest is Test {
 
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
         fileManager.storeFileHashAdmin(DESIGN_FILE_HASH, DESIGN_FILE_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         vm.prank(designer);
@@ -466,23 +394,24 @@ contract FullFlowTest is Test {
     function testFullFlowMultipleDesignsForCampaign() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
         designerRegistry.addDesigner(designer, "QmPortfolio");
-        
+
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
         fileManager.storeFileHashAdmin(DESIGN_FILE_HASH, DESIGN_FILE_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         vm.startPrank(designer);
-        designMarketplace.createDesign(campaignId, "Design 1", "First design", DESIGN_FILE_CID, "Qm1", DESIGN_METADATA_HASH, 100 ether);
-        designMarketplace.createDesign(campaignId, "Design 2", "Second design", DESIGN_FILE_CID, "Qm2", DESIGN_METADATA_HASH, 150 ether);
-        designMarketplace.createDesign(campaignId, "Design 3", "Third design", DESIGN_FILE_CID, "Qm3", DESIGN_METADATA_HASH, 200 ether);
+        designMarketplace.createDesign(
+            campaignId, "Design 1", "First design", DESIGN_FILE_CID, "Qm1", DESIGN_METADATA_HASH, 100 ether
+        );
+        designMarketplace.createDesign(
+            campaignId, "Design 2", "Second design", DESIGN_FILE_CID, "Qm2", DESIGN_METADATA_HASH, 150 ether
+        );
+        designMarketplace.createDesign(
+            campaignId, "Design 3", "Third design", DESIGN_FILE_CID, "Qm3", DESIGN_METADATA_HASH, 200 ether
+        );
         vm.stopPrank();
 
         uint256[] memory designs = designMarketplace.getDesignsByCampaign(campaignId);
@@ -492,45 +421,32 @@ contract FullFlowTest is Test {
     function testFullFlowRevertIfNGOUnverifiedCreatesCampaign() public {
         vm.expectRevert(abi.encodeWithSelector(Errors.FileNotStored.selector, CAMPAIGN_METADATA_HASH));
         campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
     }
 
     function testFullFlowRevertIfDesignerUnverifiedCreatesDesign() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         vm.startPrank(designer);
         vm.expectRevert(abi.encodeWithSelector(Errors.NotVerifiedDesigner.selector, designer));
-        designMarketplace.createDesign(campaignId, "Design", "Desc", DESIGN_FILE_CID, "Qm", DESIGN_METADATA_HASH, 100 ether);
+        designMarketplace.createDesign(
+            campaignId, "Design", "Desc", DESIGN_FILE_CID, "Qm", DESIGN_METADATA_HASH, 100 ether
+        );
         vm.stopPrank();
     }
 
     function testFullFlowGetCampaignMetadata() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         string memory cid = campaignRegistry.getCampaignMetadataCid(campaignId);
@@ -545,8 +461,8 @@ contract FullFlowTest is Test {
 
         vm.prank(ngo);
         ngoRegistry.updateNGOProfile("Updated NGO Name", "Updated description", "QmUpdatedProfile");
-        
-        (address wallet, , bool isActive) = ngoRegistry.getNGO(ngo);
+
+        (address wallet,, bool isActive) = ngoRegistry.getNGO(ngo);
         assertEq(wallet, ngo);
         assertTrue(isActive);
     }
@@ -556,12 +472,9 @@ contract FullFlowTest is Test {
 
         vm.prank(designer);
         designerRegistry.updateDesignerProfile(
-            "Updated Designer",
-            "Updated bio",
-            "QmUpdatedPortfolio",
-            "QmUpdatedProfile"
+            "Updated Designer", "Updated bio", "QmUpdatedPortfolio", "QmUpdatedProfile"
         );
-        
+
         (address wallet, string memory portfolio, bool isActive) = designerRegistry.getDesigner(designer);
         assertEq(wallet, designer);
         assertTrue(isActive);
@@ -570,36 +483,26 @@ contract FullFlowTest is Test {
     function testFullFlowDeactivateCampaign() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
-        (, , , , , bool active) = campaignRegistry.getCampaign(campaignId);
+        (,,,,, bool active) = campaignRegistry.getCampaign(campaignId);
         assertTrue(active);
 
         campaignRegistry.deactivateCampaign(campaignId);
-        
-        (, , , , , active) = campaignRegistry.getCampaign(campaignId);
+
+        (,,,,, active) = campaignRegistry.getCampaign(campaignId);
         assertFalse(active);
     }
 
     function testFullFlowRevertDonateToInactiveCampaign() public {
         ngoRegistry.addNGO(ngo, NGO_METADATA_CID);
         fileManager.storeFileHashAdmin(CAMPAIGN_METADATA_HASH, CAMPAIGN_METADATA_CID);
-        
+
         uint256 campaignId = campaignRegistry.createCampaign(
-            ngo,
-            designer,
-            NGO_SHARE_BPS,
-            DESIGNER_SHARE_BPS,
-            PLATFORM_SHARE_BPS,
-            CAMPAIGN_METADATA_HASH
+            ngo, designer, NGO_SHARE_BPS, DESIGNER_SHARE_BPS, PLATFORM_SHARE_BPS, CAMPAIGN_METADATA_HASH
         );
 
         campaignRegistry.deactivateCampaign(campaignId);
@@ -610,4 +513,3 @@ contract FullFlowTest is Test {
         donationManager.donate{value: 100 ether}(campaignId, "metadata");
     }
 }
-

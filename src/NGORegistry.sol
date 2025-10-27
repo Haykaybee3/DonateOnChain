@@ -20,7 +20,7 @@ contract NGORegistry is Ownable {
     mapping(address => NGO) private ngos;
     mapping(address => NGO) private pendingNGOs;
     address[] private pendingNGOList;
-    
+
     IAdminRegistry public immutable ADMIN_REGISTRY;
 
     event NGOAdded(address indexed wallet, string metadataHash, address indexed addedBy);
@@ -43,7 +43,7 @@ contract NGORegistry is Ownable {
     function addNGO(address wallet, string calldata metadataHash) external onlyAdmin {
         if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (bytes(metadataHash).length == 0) revert Errors.EmptyMetadata();
-        
+
         if (ngos[wallet].isActive) {
             ngos[wallet].metadataHash = metadataHash;
             emit NGOUpdated(wallet, metadataHash, msg.sender);
@@ -66,7 +66,7 @@ contract NGORegistry is Ownable {
         if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (!ngos[wallet].isActive) revert Errors.NGONotFound(wallet);
         if (bytes(metadataHash).length == 0) revert Errors.EmptyMetadata();
-        
+
         ngos[wallet].metadataHash = metadataHash;
         emit NGOUpdated(wallet, metadataHash, msg.sender);
     }
@@ -74,7 +74,7 @@ contract NGORegistry is Ownable {
     function deactivateNGO(address wallet) external onlyAdmin {
         if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (!ngos[wallet].isActive) revert Errors.NGONotFound(wallet);
-        
+
         ngos[wallet].isActive = false;
         emit NGODeactivated(wallet);
     }
@@ -103,7 +103,7 @@ contract NGORegistry is Ownable {
         if (bytes(name).length == 0 || bytes(description).length == 0) revert Errors.EmptyMetadata();
         if (bytes(metadataHash).length == 0) revert Errors.EmptyMetadata();
         if (ngos[msg.sender].isActive) revert Errors.NGOAlreadyRegistered(msg.sender);
-        
+
         pendingNGOs[msg.sender] = NGO({
             wallet: msg.sender,
             name: name,
@@ -114,41 +114,39 @@ contract NGORegistry is Ownable {
             isPending: true,
             createdAt: block.timestamp
         });
-        
+
         pendingNGOList.push(msg.sender);
         emit NGORegistrationRequested(msg.sender, metadataHash, msg.sender);
     }
 
     function approveNGO(address wallet) external onlyAdmin {
         if (!pendingNGOs[wallet].isPending) revert Errors.NGONotPending(wallet);
-        
+
         ngos[wallet] = pendingNGOs[wallet];
         ngos[wallet].isActive = true;
         ngos[wallet].isPending = false;
-        
+
         delete pendingNGOs[wallet];
         emit NGOApproved(wallet);
     }
 
     function rejectNGO(address wallet) external onlyAdmin {
         if (!pendingNGOs[wallet].isPending) revert Errors.NGONotPending(wallet);
-        
+
         delete pendingNGOs[wallet];
         emit NGORejected(wallet);
     }
 
-    function updateNGOProfile(
-        string calldata name,
-        string calldata description,
-        string calldata profileImageHash
-    ) external {
+    function updateNGOProfile(string calldata name, string calldata description, string calldata profileImageHash)
+        external
+    {
         if (!ngos[msg.sender].isActive) revert Errors.NGONotFound(msg.sender);
         if (bytes(name).length == 0 || bytes(description).length == 0) revert Errors.EmptyMetadata();
-        
+
         ngos[msg.sender].name = name;
         ngos[msg.sender].description = description;
         ngos[msg.sender].profileImageHash = profileImageHash;
-        
+
         emit NGOUpdated(msg.sender, ngos[msg.sender].metadataHash, msg.sender);
     }
 
@@ -156,4 +154,3 @@ contract NGORegistry is Ownable {
         return pendingNGOList;
     }
 }
-

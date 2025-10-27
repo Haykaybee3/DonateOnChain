@@ -8,16 +8,19 @@ import {ProofNFT} from "../src/ProofNFT.sol";
 import {DesignMarketplace} from "../src/DesignMarketplace.sol";
 
 contract DeployCampaignSystem is Script {
-    function run() external returns (
-        CampaignRegistry campaignRegistry,
-        ProofNFT proofNFT,
-        DonationManager donationManager,
-        DesignMarketplace designMarketplace
-    ) {
+    function run()
+        external
+        returns (
+            CampaignRegistry campaignRegistry,
+            ProofNFT proofNFT,
+            DonationManager donationManager,
+            DesignMarketplace designMarketplace
+        )
+    {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         address platformWallet = vm.envAddress("PLATFORM_WALLET");
-        
+
         address adminRegistry = vm.envAddress("ADMIN_REGISTRY");
         address fileManager = vm.envAddress("FILE_MANAGER");
         address ngoRegistry = vm.envAddress("NGO_REGISTRY");
@@ -31,7 +34,8 @@ contract DeployCampaignSystem is Script {
         proofNFT = new ProofNFT(deployerAddress);
         console.log("ProofNFT deployed at:", address(proofNFT));
 
-        donationManager = new DonationManager(deployerAddress, address(campaignRegistry), address(proofNFT), platformWallet);
+        donationManager =
+            new DonationManager(deployerAddress, address(campaignRegistry), address(proofNFT), platformWallet);
         console.log("DonationManager deployed at:", address(donationManager));
 
         designMarketplace = new DesignMarketplace(
@@ -65,4 +69,3 @@ contract DeployCampaignSystem is Script {
         vm.stopBroadcast();
     }
 }
-

@@ -49,12 +49,9 @@ contract DonationManager is Ownable, ReentrancyGuard {
     error TransferFailed(address recipient, uint256 amount);
     error HCSCallFailed(int64 responseCode);
 
-    constructor(
-        address initialOwner,
-        address _campaignRegistry,
-        address _proofNFT,
-        address _platformWallet
-    ) Ownable(initialOwner) {
+    constructor(address initialOwner, address _campaignRegistry, address _proofNFT, address _platformWallet)
+        Ownable(initialOwner)
+    {
         if (_campaignRegistry == address(0)) revert Errors.InvalidAddress(_campaignRegistry);
         if (_proofNFT == address(0)) revert Errors.InvalidAddress(_proofNFT);
         if (_platformWallet == address(0)) revert Errors.InvalidAddress(_platformWallet);
@@ -87,12 +84,7 @@ contract DonationManager is Ownable, ReentrancyGuard {
         _transferHbar(payable(designer), designerAmount);
         _transferHbar(payable(platformWallet), platformAmount);
 
-        uint256 nftSerialNumber = PROOF_NFT.mintDonationNFT(
-            msg.sender,
-            campaignId,
-            msg.value,
-            metadataHash
-        );
+        uint256 nftSerialNumber = PROOF_NFT.mintDonationNFT(msg.sender, campaignId, msg.value, metadataHash);
 
         Donation memory donation = Donation({
             donor: msg.sender,
@@ -146,44 +138,37 @@ contract DonationManager is Ownable, ReentrancyGuard {
 
     function _transferHbar(address payable recipient, uint256 amount) private {
         if (amount == 0) return;
-        (bool success, ) = recipient.call{value: amount}("");
+        (bool success,) = recipient.call{value: amount}("");
         if (!success) revert TransferFailed(recipient, amount);
     }
 
-    function _logToHCS(
-        address donor,
-        uint256 campaignId,
-        uint256 amount,
-        uint256 serialNumber
-    ) private {
-        bytes memory logData = abi.encode(
-            blockhash(block.number - 1),
-            donor,
-            campaignId,
-            amount,
-            block.timestamp,
-            serialNumber
-        );
+    function _logToHCS(address donor, uint256 campaignId, uint256 amount, uint256 serialNumber) private {
+        bytes memory logData =
+            abi.encode(blockhash(block.number - 1), donor, campaignId, amount, block.timestamp, serialNumber);
 
         IHederaConsensusService hcs = IHederaConsensusService(HCS_PRECOMPILE);
         int64 responseCode = hcs.submitMessage(hcsTopicId, logData);
         if (responseCode != 22) revert HCSCallFailed(responseCode);
     }
 
-    function getDonationsByCampaign(uint256 campaignId) external view returns (
-        address[] memory donors,
-        uint256[] memory amounts,
-        uint256[] memory timestamps,
-        uint256[] memory nftSerialNumbers
-    ) {
+    function getDonationsByCampaign(uint256 campaignId)
+        external
+        view
+        returns (
+            address[] memory donors,
+            uint256[] memory amounts,
+            uint256[] memory timestamps,
+            uint256[] memory nftSerialNumbers
+        )
+    {
         uint256[] memory donationIds = donationsByCampaign[campaignId];
         uint256 length = donationIds.length;
-        
+
         donors = new address[](length);
         amounts = new uint256[](length);
         timestamps = new uint256[](length);
         nftSerialNumbers = new uint256[](length);
-        
+
         for (uint256 i = 0; i < length; i++) {
             Donation memory donation = donations[donationIds[i]];
             donors[i] = donation.donor;
@@ -193,20 +178,24 @@ contract DonationManager is Ownable, ReentrancyGuard {
         }
     }
 
-    function getDonationsByDonor(address donor) external view returns (
-        uint256[] memory campaignIds,
-        uint256[] memory amounts,
-        uint256[] memory timestamps,
-        uint256[] memory nftSerialNumbers
-    ) {
+    function getDonationsByDonor(address donor)
+        external
+        view
+        returns (
+            uint256[] memory campaignIds,
+            uint256[] memory amounts,
+            uint256[] memory timestamps,
+            uint256[] memory nftSerialNumbers
+        )
+    {
         uint256[] memory donationIds = donationsByDonor[donor];
         uint256 length = donationIds.length;
-        
+
         campaignIds = new uint256[](length);
         amounts = new uint256[](length);
         timestamps = new uint256[](length);
         nftSerialNumbers = new uint256[](length);
-        
+
         for (uint256 i = 0; i < length; i++) {
             Donation memory donation = donations[donationIds[i]];
             campaignIds[i] = donation.campaignId;
@@ -216,4 +205,3 @@ contract DonationManager is Ownable, ReentrancyGuard {
         }
     }
 }
-

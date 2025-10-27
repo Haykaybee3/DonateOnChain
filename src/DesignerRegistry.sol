@@ -20,7 +20,7 @@ contract DesignerRegistry is Ownable {
     mapping(address => Designer) private designers;
     mapping(address => Designer) private pendingDesigners;
     address[] private pendingDesignerList;
-    
+
     IAdminRegistry public immutable ADMIN_REGISTRY;
 
     event DesignerAdded(address indexed wallet, string portfolioHash, address indexed addedBy);
@@ -43,7 +43,7 @@ contract DesignerRegistry is Ownable {
     function addDesigner(address wallet, string calldata portfolioHash) external onlyAdmin {
         if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (bytes(portfolioHash).length == 0) revert Errors.EmptyMetadata();
-        
+
         if (designers[wallet].isActive) {
             designers[wallet].portfolioHash = portfolioHash;
             emit DesignerUpdated(wallet, portfolioHash, msg.sender);
@@ -66,7 +66,7 @@ contract DesignerRegistry is Ownable {
         if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (!designers[wallet].isActive) revert Errors.DesignerNotFound(wallet);
         if (bytes(portfolioHash).length == 0) revert Errors.EmptyMetadata();
-        
+
         designers[wallet].portfolioHash = portfolioHash;
         emit DesignerUpdated(wallet, portfolioHash, msg.sender);
     }
@@ -74,7 +74,7 @@ contract DesignerRegistry is Ownable {
     function deactivateDesigner(address wallet) external onlyAdmin {
         if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (!designers[wallet].isActive) revert Errors.DesignerNotFound(wallet);
-        
+
         designers[wallet].isActive = false;
         emit DesignerDeactivated(wallet);
     }
@@ -88,7 +88,11 @@ contract DesignerRegistry is Ownable {
         return designers[designer].wallet;
     }
 
-    function getDesigner(address designer) external view returns (address wallet, string memory portfolioHash, bool isActive) {
+    function getDesigner(address designer)
+        external
+        view
+        returns (address wallet, string memory portfolioHash, bool isActive)
+    {
         Designer storage designerData = designers[designer];
         return (designerData.wallet, designerData.portfolioHash, designerData.isActive);
     }
@@ -103,7 +107,7 @@ contract DesignerRegistry is Ownable {
         if (bytes(name).length == 0 || bytes(bio).length == 0) revert Errors.EmptyMetadata();
         if (bytes(portfolioHash).length == 0) revert Errors.EmptyMetadata();
         if (designers[msg.sender].isActive) revert Errors.DesignerAlreadyRegistered(msg.sender);
-        
+
         pendingDesigners[msg.sender] = Designer({
             wallet: msg.sender,
             name: name,
@@ -114,25 +118,25 @@ contract DesignerRegistry is Ownable {
             isPending: true,
             createdAt: block.timestamp
         });
-        
+
         pendingDesignerList.push(msg.sender);
         emit DesignerRegistrationRequested(msg.sender, portfolioHash, msg.sender);
     }
 
     function approveDesigner(address wallet) external onlyAdmin {
         if (!pendingDesigners[wallet].isPending) revert Errors.DesignerNotPending(wallet);
-        
+
         designers[wallet] = pendingDesigners[wallet];
         designers[wallet].isActive = true;
         designers[wallet].isPending = false;
-        
+
         delete pendingDesigners[wallet];
         emit DesignerApproved(wallet);
     }
 
     function rejectDesigner(address wallet) external onlyAdmin {
         if (!pendingDesigners[wallet].isPending) revert Errors.DesignerNotPending(wallet);
-        
+
         delete pendingDesigners[wallet];
         emit DesignerRejected(wallet);
     }
@@ -145,12 +149,12 @@ contract DesignerRegistry is Ownable {
     ) external {
         if (!designers[msg.sender].isActive) revert Errors.DesignerNotFound(msg.sender);
         if (bytes(name).length == 0 || bytes(bio).length == 0) revert Errors.EmptyMetadata();
-        
+
         designers[msg.sender].name = name;
         designers[msg.sender].bio = bio;
         designers[msg.sender].portfolioHash = portfolioHash;
         designers[msg.sender].profileImageHash = profileImageHash;
-        
+
         emit DesignerUpdated(msg.sender, portfolioHash, msg.sender);
     }
 
@@ -158,4 +162,3 @@ contract DesignerRegistry is Ownable {
         return pendingDesignerList;
     }
 }
-

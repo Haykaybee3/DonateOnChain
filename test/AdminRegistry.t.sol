@@ -26,7 +26,7 @@ contract AdminRegistryTest is Test {
     function testAddAdmin() public {
         vm.expectEmit(true, false, false, true);
         emit AdminAdded(admin, owner);
-        
+
         adminRegistry.addAdmin(admin);
         assertTrue(adminRegistry.isAdmin(admin));
     }
@@ -37,7 +37,7 @@ contract AdminRegistryTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit AdminRemoved(admin, owner);
-        
+
         adminRegistry.removeAdmin(admin);
         assertFalse(adminRegistry.isAdmin(admin));
     }
@@ -78,4 +78,3 @@ contract AdminRegistryTest is Test {
         assertTrue(adminRegistry.isAdmin(admin3));
     }
 }
-

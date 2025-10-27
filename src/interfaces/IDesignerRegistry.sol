@@ -5,4 +5,3 @@ interface IDesignerRegistry {
     function isVerifiedDesigner(address designer) external view returns (bool);
     function getDesignerWallet(address designer) external view returns (address);
 }
-

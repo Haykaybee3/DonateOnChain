@@ -18,7 +18,7 @@ contract AdminRegistry is Ownable {
     function addAdmin(address admin) external onlyOwner {
         if (admin == address(0)) revert Errors.InvalidAddress(admin);
         if (admins[admin]) return;
-        
+
         admins[admin] = true;
         emit AdminAdded(admin, msg.sender);
     }
@@ -26,7 +26,7 @@ contract AdminRegistry is Ownable {
     function removeAdmin(address admin) external onlyOwner {
         if (admin == address(0)) revert Errors.InvalidAddress(admin);
         if (!admins[admin]) return;
-        
+
         admins[admin] = false;
         emit AdminRemoved(admin, msg.sender);
     }
@@ -35,4 +35,3 @@ contract AdminRegistry is Ownable {
         return admins[user];
     }
 }
-

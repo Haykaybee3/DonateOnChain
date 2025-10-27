@@ -13,10 +13,7 @@ interface IHederaTokenService {
         bytes[] royaltyFees;
     }
 
-    function mintToken(
-        address token,
-        uint64 amount,
-        bytes[] calldata metadata
-    ) external returns (int64 responseCode, uint64 newTotalSupply, int64[] memory serialNumbers);
+    function mintToken(address token, uint64 amount, bytes[] calldata metadata)
+        external
+        returns (int64 responseCode, uint64 newTotalSupply, int64[] memory serialNumbers);
 }
-

@@ -5,4 +5,3 @@ interface INGORegistry {
     function isVerifiedNGO(address ngo) external view returns (bool);
     function getNGOWallet(address ngo) external view returns (address);
 }
-

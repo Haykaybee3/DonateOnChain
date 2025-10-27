@@ -14,7 +14,7 @@ contract InteractDonation is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
-        
+
         address adminRegistryAddr = vm.envAddress("ADMIN_REGISTRY");
         address ngoRegistryAddr = vm.envAddress("NGO_REGISTRY");
         address designerRegistryAddr = vm.envAddress("DESIGNER_REGISTRY");
@@ -22,7 +22,7 @@ contract InteractDonation is Script {
         address campaignRegistryAddr = vm.envAddress("CAMPAIGN_REGISTRY");
         address donationManagerAddr = vm.envAddress("DONATION_MANAGER");
         address proofNFTAddr = vm.envAddress("PROOF_NFT");
-        
+
         vm.startBroadcast(deployerPrivateKey);
 
         AdminRegistry adminRegistry = AdminRegistry(adminRegistryAddr);
@@ -41,19 +41,18 @@ contract InteractDonation is Script {
         console.log("Campaign Registry:", address(campaignRegistry));
         console.log("Donation Manager:", address(donationManager));
         console.log("Proof NFT:", address(proofNFT));
-        
+
         console.log("\n=== Making Test Donation ===");
         uint256 donationAmount = 1 ether;
         console.log("Donation Amount:", donationAmount);
-        
+
         uint256 campaignId = 0;
         uint256 nftSerial = donationManager.donate{value: donationAmount}(campaignId, "test-metadata");
         console.log("Donation processed successfully!");
         console.log("NFT Serial Number:", nftSerial);
-        
+
         vm.stopBroadcast();
-        
+
         console.log("\n=== Interaction Complete ===");
     }
 }
-

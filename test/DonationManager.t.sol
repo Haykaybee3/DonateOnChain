@@ -11,12 +11,9 @@ import {DonationManager} from "../src/DonationManager.sol";
 import {Errors} from "../src/Errors.sol";
 
 interface IProofNFT {
-    function mintDonationNFT(
-        address donor,
-        uint256 campaignId,
-        uint256 amount,
-        string calldata metadataHash
-    ) external returns (uint256);
+    function mintDonationNFT(address donor, uint256 campaignId, uint256 amount, string calldata metadataHash)
+        external
+        returns (uint256);
 }
 
 contract MockProofNFT is IProofNFT {
@@ -39,12 +36,10 @@ contract MockProofNFT is IProofNFT {
         donationManager = manager;
     }
 
-    function mintDonationNFT(
-        address donor,
-        uint256 campaignId,
-        uint256 amount,
-        string calldata metadataHash
-    ) external returns (uint256) {
+    function mintDonationNFT(address donor, uint256 campaignId, uint256 amount, string calldata metadataHash)
+        external
+        returns (uint256)
+    {
         if (msg.sender != donationManager) revert Errors.NotDonationManager(msg.sender);
         uint256 serial = serialCounter++;
         emit ProofOfDonationMinted(donor, campaignId, serial, amount, metadataHash);
@@ -64,7 +59,7 @@ contract DonationManagerTest is Test {
     CampaignRegistry public campaignRegistry;
     MockProofNFT public proofNFT;
     DonationManager public donationManager;
-    
+
     TestRecipient public platformWallet;
     TestRecipient public ngoRecipient;
     TestRecipient public designerRecipient;
@@ -85,15 +80,18 @@ contract DonationManagerTest is Test {
         adminRegistry = new AdminRegistry(address(this));
         ngoRegistry = new NGORegistry(address(this), address(adminRegistry));
         designerRegistry = new DesignerRegistry(address(this), address(adminRegistry));
-        fileManager = new FileManager(address(this), address(adminRegistry), address(ngoRegistry), address(designerRegistry));
-        campaignRegistry = new CampaignRegistry(address(this), address(adminRegistry), address(fileManager), address(ngoRegistry));
+        fileManager =
+            new FileManager(address(this), address(adminRegistry), address(ngoRegistry), address(designerRegistry));
+        campaignRegistry =
+            new CampaignRegistry(address(this), address(adminRegistry), address(fileManager), address(ngoRegistry));
 
         ngoRegistry.addNGO(address(ngoRecipient), "ipfs://QmTestNGO");
         designerRegistry.addDesigner(address(designerRecipient), "ipfs://QmTestDesigner");
         fileManager.storeFileHashAdmin(METADATA_HASH, "ipfs://QmTestMetadata");
 
         proofNFT = new MockProofNFT();
-        donationManager = new DonationManager(address(this), address(campaignRegistry), address(proofNFT), address(platformWallet));
+        donationManager =
+            new DonationManager(address(this), address(campaignRegistry), address(proofNFT), address(platformWallet));
         proofNFT.setDonationManager(address(donationManager));
 
         campaignRegistry.createCampaign(
@@ -108,7 +106,7 @@ contract DonationManagerTest is Test {
 
     function testDonateSuccess() public {
         vm.deal(donor, DONATION_AMOUNT);
-        
+
         uint256 ngoBalanceBefore = address(ngoRecipient).balance;
         uint256 designerBalanceBefore = address(designerRecipient).balance;
         uint256 platformBalanceBefore = address(platformWallet).balance;
@@ -123,7 +121,7 @@ contract DonationManagerTest is Test {
 
     function testRevertWhenZeroAmount() public {
         vm.deal(donor, DONATION_AMOUNT);
-        
+
         vm.prank(donor);
         vm.expectRevert(Errors.ZeroAmount.selector);
         donationManager.donate{value: 0}(0, "test-metadata");
@@ -139,9 +137,9 @@ contract DonationManagerTest is Test {
 
     function testUpdatePlatformWallet() public {
         TestRecipient newPlatformWallet = new TestRecipient();
-        
+
         donationManager.updatePlatformWallet(address(newPlatformWallet));
-        
+
         vm.deal(donor, DONATION_AMOUNT);
         vm.prank(donor);
         donationManager.donate{value: DONATION_AMOUNT}(0, "test-metadata");
@@ -151,9 +149,9 @@ contract DonationManagerTest is Test {
 
     function testFuzzDonate(uint256 amount) public {
         amount = bound(amount, 1, type(uint128).max);
-        
+
         vm.deal(donor, amount);
-        
+
         uint256 ngoBalanceBefore = address(ngoRecipient).balance;
         uint256 designerBalanceBefore = address(designerRecipient).balance;
         uint256 platformBalanceBefore = address(platformWallet).balance;
@@ -170,4 +168,3 @@ contract DonationManagerTest is Test {
         assertEq(address(platformWallet).balance - platformBalanceBefore, platformAmount);
     }
 }
-

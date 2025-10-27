@@ -33,12 +33,9 @@ contract FileManager is Ownable {
         _;
     }
 
-    constructor(
-        address initialOwner,
-        address _adminRegistry,
-        address _ngoRegistry,
-        address _designerRegistry
-    ) Ownable(initialOwner) {
+    constructor(address initialOwner, address _adminRegistry, address _ngoRegistry, address _designerRegistry)
+        Ownable(initialOwner)
+    {
         if (_adminRegistry == address(0)) revert Errors.InvalidAddress(_adminRegistry);
         if (_ngoRegistry == address(0)) revert Errors.InvalidAddress(_ngoRegistry);
         if (_designerRegistry == address(0)) revert Errors.InvalidAddress(_designerRegistry);
@@ -63,7 +60,7 @@ contract FileManager is Ownable {
     function _store(bytes32 fileHash, string calldata ipfsCid, address uploader) internal {
         if (fileHash == bytes32(0)) revert Errors.FileNotStored(fileHash);
         if (bytes(ipfsCid).length == 0) revert Errors.EmptyCID();
-        
+
         ipfsCidOf[fileHash] = ipfsCid;
         uploaderOf[fileHash] = uploader;
         emit FileStored(fileHash, ipfsCid, uploader, msg.sender);
@@ -71,7 +68,7 @@ contract FileManager is Ownable {
 
     function removeFileHash(bytes32 fileHash) external onlyAdmin {
         if (bytes(ipfsCidOf[fileHash]).length == 0) revert Errors.FileNotStored(fileHash);
-        
+
         delete ipfsCidOf[fileHash];
         delete uploaderOf[fileHash];
         emit FileRemoved(fileHash, msg.sender);
@@ -91,4 +88,3 @@ contract FileManager is Ownable {
         return bytes(ipfsCidOf[fileHash]).length > 0;
     }
 }
-
