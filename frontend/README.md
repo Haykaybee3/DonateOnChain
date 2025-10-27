@@ -16,9 +16,9 @@
 
 | Contract | Address |
 |----------|---------|
-| CampaignRegistry | `0x81775344822728c64a9F05b6D70DBa2539021D73` |
-| ProofNFT | `0xD0209cA2c827F3FE83Ef1d9d34Fa9F3C54E0d87b` |
-| DonationManager | `0xd0209ca2c827f3fe83ef1d9d34fa9f3c54e0d87b` |
+| CampaignRegistry | `0x6016321E000976176766f0fDD1D589462cA1d741` |
+| ProofNFT | `0x250F7F189E3A45Bf3dC47fA7aD6C7f0e5f6FdfA5` |
+| DonationManager | `0x4de26c586644E3Fb64bE8b52cA3944Dae637882d` |
 | DesignMarketplace | `0x6fe8C1dd67dC7164Df2A701D53E7148CbCF1c895` |
 
 ## Usage
@@ -36,7 +36,8 @@ These addresses are configured in:
 ## Verify on Hashscan
 
 View contracts on Hashscan:
-- [CampaignRegistry](https://hashscan.io/testnet/contract/0x81775344822728c64a9F05b6D70DBa2539021D73)
-- [DonationManager](https://hashscan.io/testnet/contract/0xd0209ca2c827f3fe83ef1d9d34fa9f3c54e0d87b)
+- [CampaignRegistry](https://hashscan.io/testnet/contract/0x6016321E000976176766f0fDD1D589462cA1d741)
+- [DonationManager](https://hashscan.io/testnet/contract/0x4de26c586644E3Fb64bE8b52cA3944Dae637882d)
+- [ProofNFT](https://hashscan.io/testnet/contract/0x250F7F189E3A45Bf3dC47fA7aD6C7f0e5f6FdfA5)
 - [DesignMarketplace](https://hashscan.io/testnet/contract/0x6fe8C1dd67dC7164Df2A701D53E7148CbCF1c895)
 

@@ -274,3 +274,12 @@ A user wants to support a campaign:
 - The blockchain stores the hash (fingerprint) of these files
 - This keeps the blockchain lean while ensuring file integrity
 
+**Proof of Mint:**
+1. ✅ ProofNFT.donationManager() → 0x4de26c586644E3Fb64bE8b52cA3944Dae637882d
+   ✓ DonationManager is authorized to mint NFTs
+
+2. ✅ ProofNFT.nftTokenId() → 0x00000000000000000000000000000000006D0F04
+   ✓ NFT Token ID configured (Hedera token 0.0.7147268)
+
+3. ✅ DonationManager.hcsTopicId() → 0x00000000000000000000000000000000006d0f03
+   ✓ HCS logging configured (Hedera topic 0.0.7147267)
