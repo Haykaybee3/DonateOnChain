@@ -2,39 +2,44 @@ name: CI
 
 on:
   push:
+    branches: [ main, master ]
   pull_request:
-  workflow_dispatch:
+    branches: [ main, master ]
 
 env:
   FOUNDRY_PROFILE: ci
 
 jobs:
   check:
-    name: Foundry project
+    name: Foundry Tests
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 1
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
-      - name: Show Forge version
-        run: |
-          forge --version
+      - name: Install dependencies
+        run: forge install
 
-      - name: Run Forge fmt
+      - name: Format code
         run: |
           forge fmt --check
-        id: fmt
+          echo "✓ Formatting check passed"
 
-      - name: Run Forge build
+      - name: Build contracts
         run: |
-          forge build --sizes
-        id: build
+          forge build
+          echo "✓ Build successful"
 
-      - name: Run Forge tests
+      - name: Run tests
         run: |
-          forge test -vvv
-        id: test
+          forge test
+          echo "✓ All tests passed"

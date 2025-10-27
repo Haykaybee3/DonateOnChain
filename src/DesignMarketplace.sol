@@ -88,7 +88,9 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         string calldata metadataHash,
         uint256 price
     ) external returns (uint256) {
-        if (!DESIGNER_REGISTRY.isVerifiedDesigner(msg.sender)) revert Errors.NotVerifiedDesigner(msg.sender);
+        if (!DESIGNER_REGISTRY.isVerifiedDesigner(msg.sender)) {
+            revert Errors.NotVerifiedDesigner(msg.sender);
+        }
         if (price == 0) revert Errors.InvalidPrice(price);
         if (bytes(designName).length == 0 || bytes(description).length == 0) revert Errors.EmptyMetadata();
         if (bytes(designFileHash).length == 0 || bytes(metadataHash).length == 0) revert Errors.EmptyMetadata();
