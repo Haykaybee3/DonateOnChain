@@ -51,13 +51,6 @@ const Campaign = () => {
                 setIsLoading(false)
             } catch (error) {
                 console.error('Error loading on-chain campaigns:', error)
-                // Fallback to previous behavior if chain fetch fails
-                try {
-                    const firebaseCampaigns = await getAllCampaigns()
-                    const syncedCampaigns = await syncCampaignsWithOnChain(firebaseCampaigns)
-                    setAllCampaigns(syncedCampaigns)
-                    setFilteredCampaigns(syncedCampaigns)
-                } catch {}
                 setIsLoading(false)
             }
         }

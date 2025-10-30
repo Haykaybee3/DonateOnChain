@@ -62,7 +62,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
                 
                
                 <div className="mt-2 text-right">
-                    <span className="text-sm text-gray-600">of {goal}</span>
+                    <span className="text-sm text-gray-600">Target: {goal} HBAR</span>
                 </div>
             </div>
         </div>
