@@ -11,6 +11,7 @@ import {Errors} from "./Errors.sol";
 import {IAdminRegistry} from "./interfaces/IAdminRegistry.sol";
 
 contract DesignMarketplace is Ownable, ReentrancyGuard {
+    uint256 private constant MAX_BPS = 10000;
     struct Design {
         uint256 designId;
         address designer;
@@ -40,9 +41,26 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
 
     address public platformWallet;
 
+    /// @notice Emitted when a new design is created and listed for sale
+    /// @param designId Id
+    /// @param designer Who created
+    /// @param campaignId Campaign
+    /// @param designName Name
+    /// @param price Price
     event DesignCreated(
-        uint256 indexed designId, address indexed designer, uint256 indexed campaignId, string designName, uint256 price
+        uint256 indexed designId,
+        address indexed designer,
+        uint256 indexed campaignId,
+        string designName,
+        uint256 price
     );
+
+    /// @notice Emitted when a design is purchased by a user
+    /// @param buyer Who purchased
+    /// @param designId Id
+    /// @param campaignId Campaign
+    /// @param price What user paid
+    /// @param nftSerialNumber NFT serial issued
     event DesignPurchased(
         address indexed buyer,
         uint256 indexed designId,
@@ -50,11 +68,30 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         uint256 price,
         uint256 nftSerialNumber
     );
-    event DesignDeactivated(uint256 indexed designId);
-    event FundsDistributed(
-        uint256 indexed designId, uint256 totalAmount, uint256 ngoAmount, uint256 designerAmount, uint256 platformAmount
-    );
 
+    /// @notice Emitted when funds are distributed after design purchase
+    /// @param designId Design
+    /// @param totalAmount Payment sent (wei)
+    /// @param ngoAmount NGO amount
+    /// @param designerAmount Designer
+    /// @param platformAmount Platform
+    event FundsDistributed(
+        uint256 indexed designId,
+        uint256 totalAmount,
+        uint256 ngoAmount,
+        uint256 designerAmount,
+        uint256 platformAmount
+    );
+    event DesignDeactivated(uint256 indexed designId);
+
+    /// @notice Constructor sets core contract addresses and platform wallet
+    /// @param initialOwner The owner/admin address
+    /// @param _designerRegistry DesignerRegistry address
+    /// @param _campaignRegistry CampaignRegistry address
+    /// @param _proofNFT ProofNFT address
+    /// @param _fileManager FileManager address
+    /// @param _platformWallet Platform wallet address
+    /// @param _adminRegistry AdminRegistry address
     constructor(
         address initialOwner,
         address _designerRegistry,
@@ -79,6 +116,16 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         ADMIN_REGISTRY = IAdminRegistry(_adminRegistry);
     }
 
+    /// @notice Create a new design for a campaign and enable purchase
+    /// @dev Only verified designers. Event emitted on create.
+    /// @param campaignId Campaign
+    /// @param designName Name of design
+    /// @param description Description (required)
+    /// @param designFileHash File hash/IPFS
+    /// @param previewImageHash Preview image IPFS
+    /// @param metadataHash Metadata IPFS hash
+    /// @param price Price (wei)
+    /// @return designId The new design id
     function createDesign(
         uint256 campaignId,
         string calldata designName,
@@ -99,6 +146,7 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
             CAMPAIGN_REGISTRY.getCampaign(campaignId);
 
         if (!active) revert Errors.InactiveCampaign(campaignId);
+        if (ngo == address(0)) revert Errors.CampaignNotFound(campaignId);
 
         uint256 designId = designCount;
         designs[designId] = Design({
@@ -125,6 +173,10 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         return designId;
     }
 
+    /// @notice Buy an active design (NFT proof issued)
+    /// @dev Splits sent value among campaign stakeholders. Emits events on purchase and fund allocation.
+    /// @param designId Design id
+    /// @return nftSerialNumber Minted NFT serial number
     function purchaseDesign(uint256 designId) external payable nonReentrant returns (uint256) {
         Design storage design = designs[designId];
         if (design.designer == address(0)) revert Errors.DesignNotFound(designId);
@@ -136,9 +188,10 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
 
         (address ngo,, uint256 ngoShareBps, uint256 designerShareBps, uint256 platformShareBps,) =
             CAMPAIGN_REGISTRY.getCampaign(design.campaignId);
+        if (ngo == address(0)) revert Errors.CampaignNotFound(design.campaignId);
 
-        uint256 ngoAmount = (msg.value * ngoShareBps) / 10000;
-        uint256 designerAmount = (msg.value * designerShareBps) / 10000;
+        uint256 ngoAmount = (msg.value * ngoShareBps) / MAX_BPS;
+        uint256 designerAmount = (msg.value * designerShareBps) / MAX_BPS;
         uint256 platformAmount = msg.value - ngoAmount - designerAmount;
 
         _transferHbar(payable(ngo), ngoAmount);
@@ -156,6 +209,8 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         return nftSerialNumber;
     }
 
+    /// @notice Deactivate a design (owner, designer, or admin only)
+    /// @param designId Design id
     function deactivateDesign(uint256 designId) external {
         Design storage design = designs[designId];
         if (design.designer == address(0)) revert Errors.DesignNotFound(designId);
@@ -172,6 +227,13 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         emit DesignDeactivated(designId);
     }
 
+    /// @notice Get design details by id
+    /// @param designId Design id
+    /// @return designer Designer address
+    /// @return campaignId Campaign id
+    /// @return designName Design name
+    /// @return price Design price (wei)
+    /// @return active Is design active
     function getDesign(uint256 designId)
         external
         view
@@ -183,10 +245,16 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         return (design.designer, design.campaignId, design.designName, design.price, design.active);
     }
 
+    /// @notice Get all design ids for a campaign
+    /// @param campaignId Campaign id
+    /// @return Array of design ids
     function getDesignsByCampaign(uint256 campaignId) external view returns (uint256[] memory) {
         return campaignDesigns[campaignId];
     }
 
+    /// @notice Get all design ids for a designer
+    /// @param designer Designer wallet
+    /// @return Array of ids
     function getDesignsByDesigner(address designer) external view returns (uint256[] memory) {
         return designerDesigns[designer];
     }

@@ -120,6 +120,7 @@ contract NGORegistry is Ownable {
     }
 
     function approveNGO(address wallet) external onlyAdmin {
+        if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (!pendingNGOs[wallet].isPending) revert Errors.NGONotPending(wallet);
 
         ngos[wallet] = pendingNGOs[wallet];
@@ -131,6 +132,7 @@ contract NGORegistry is Ownable {
     }
 
     function rejectNGO(address wallet) external onlyAdmin {
+        if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (!pendingNGOs[wallet].isPending) revert Errors.NGONotPending(wallet);
 
         delete pendingNGOs[wallet];
