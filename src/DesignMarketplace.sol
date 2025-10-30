@@ -12,6 +12,7 @@ import {IAdminRegistry} from "./interfaces/IAdminRegistry.sol";
 
 contract DesignMarketplace is Ownable, ReentrancyGuard {
     uint256 private constant MAX_BPS = 10000;
+
     struct Design {
         uint256 designId;
         address designer;
@@ -48,11 +49,7 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
     /// @param designName Name
     /// @param price Price
     event DesignCreated(
-        uint256 indexed designId,
-        address indexed designer,
-        uint256 indexed campaignId,
-        string designName,
-        uint256 price
+        uint256 indexed designId, address indexed designer, uint256 indexed campaignId, string designName, uint256 price
     );
 
     /// @notice Emitted when a design is purchased by a user
@@ -76,11 +73,7 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
     /// @param designerAmount Designer
     /// @param platformAmount Platform
     event FundsDistributed(
-        uint256 indexed designId,
-        uint256 totalAmount,
-        uint256 ngoAmount,
-        uint256 designerAmount,
-        uint256 platformAmount
+        uint256 indexed designId, uint256 totalAmount, uint256 ngoAmount, uint256 designerAmount, uint256 platformAmount
     );
     event DesignDeactivated(uint256 indexed designId);
 

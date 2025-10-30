@@ -18,8 +18,15 @@ interface IProofNFT_DM_C {
 contract MockProofNFT_DM_C is IProofNFT_DM_C {
     address public donationManager;
     uint256 private serial;
-    constructor() { serial = 1; }
-    function setDonationManager(address m) external { donationManager = m; }
+
+    constructor() {
+        serial = 1;
+    }
+
+    function setDonationManager(address m) external {
+        donationManager = m;
+    }
+
     function mintDonationNFT(address, uint256, uint256, string calldata) external returns (uint256) {
         require(msg.sender == donationManager, "NDM");
         return serial++;
@@ -53,7 +60,8 @@ contract DonationManagerConfigTest is Test {
         ngoRegistry = new NGORegistry(admin, address(adminRegistry));
         designerRegistry = new DesignerRegistry(admin, address(adminRegistry));
         fileManager = new FileManager(admin, address(adminRegistry), address(ngoRegistry), address(designerRegistry));
-        campaignRegistry = new CampaignRegistry(admin, address(adminRegistry), address(fileManager), address(ngoRegistry));
+        campaignRegistry =
+            new CampaignRegistry(admin, address(adminRegistry), address(fileManager), address(ngoRegistry));
 
         proof = new MockProofNFT_DM_C();
         donationManager = new DonationManager(admin, address(campaignRegistry), address(proof), admin);
@@ -79,5 +87,3 @@ contract DonationManagerConfigTest is Test {
         donationManager.disableHCSLogging();
     }
 }
-
-

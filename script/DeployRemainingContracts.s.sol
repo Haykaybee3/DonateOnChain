@@ -21,21 +21,12 @@ contract DeployRemainingContracts is Script {
 
         address owner = vm.addr(pk);
 
-        CampaignRegistry campaignRegistry = new CampaignRegistry(
-            owner,
-            adminRegistry,
-            fileManager,
-            ngoRegistry
-        );
+        CampaignRegistry campaignRegistry = new CampaignRegistry(owner, adminRegistry, fileManager, ngoRegistry);
 
         ProofNFT proofNFT = new ProofNFT(owner);
 
-        DonationManager donationManager = new DonationManager(
-            owner,
-            address(campaignRegistry),
-            address(proofNFT),
-            platformWallet
-        );
+        DonationManager donationManager =
+            new DonationManager(owner, address(campaignRegistry), address(proofNFT), platformWallet);
 
         DesignMarketplace marketplace = new DesignMarketplace(
             owner,
@@ -57,5 +48,3 @@ contract DeployRemainingContracts is Script {
         vm.stopBroadcast();
     }
 }
-
-

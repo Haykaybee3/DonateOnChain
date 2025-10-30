@@ -17,7 +17,7 @@ contract DonateToCampaign is Script {
         console.log("=== Donation Test - Pre-flight Checks ===");
         console.log("Donor Address:", deployerAddress);
         console.log("Donation Manager:", donationManagerAddr);
-        
+
         vm.startBroadcast(deployerPrivateKey);
 
         DonationManager donationManager = DonationManager(payable(donationManagerAddr));
@@ -26,16 +26,16 @@ contract DonateToCampaign is Script {
 
         address nftTokenId = proofNFT.nftTokenId();
         address proofNFTDonationManager = proofNFT.donationManager();
-        
+
         console.log("Proof NFT Token ID:", nftTokenId);
         console.log("Proof NFT Contract:", proofNFTAddr);
         console.log("NFT Donation Manager:", proofNFTDonationManager);
-        
+
         if (nftTokenId == address(0)) {
             console.log("ERROR: NFT Token ID not set in ProofNFT contract!");
             revert("NFT Token ID not configured");
         }
-        
+
         if (proofNFTDonationManager != donationManagerAddr) {
             console.log("ERROR: ProofNFT donation manager mismatch!");
             console.log("Expected:", donationManagerAddr);
@@ -45,16 +45,16 @@ contract DonateToCampaign is Script {
 
         uint256[] memory activeCampaigns = campaignRegistry.getActiveCampaigns();
         console.log("\nActive Campaigns:", activeCampaigns.length);
-        
+
         if (activeCampaigns.length == 0) {
             console.log("ERROR: No active campaigns available!");
             revert("No active campaigns");
         }
 
         uint256 campaignId = activeCampaigns[0];
-        (address ngo, address designer, uint256 ngoBps, uint256 designerBps, uint256 platformBps, bool active) = 
+        (address ngo, address designer, uint256 ngoBps, uint256 designerBps, uint256 platformBps, bool active) =
             campaignRegistry.getCampaign(campaignId);
-        
+
         console.log("\n=== Campaign Details ===");
         console.log("Campaign ID:", campaignId);
         console.log("NGO:", ngo);
@@ -71,7 +71,7 @@ contract DonateToCampaign is Script {
 
         uint256 donationAmount = 10 * 1e8;
         string memory metadataHash = "donation-test-metadata";
-        
+
         uint256 donorBalanceBefore = deployerAddress.balance;
         uint256 ngoBalanceBefore = ngo.balance;
         uint256 designerBalanceBefore = designer.balance;
@@ -81,11 +81,8 @@ contract DonateToCampaign is Script {
         console.log("Donation Amount (tinybars):", donationAmount);
         console.log("Metadata Hash:", metadataHash);
 
-        uint256 nftSerial = donationManager.donate{value: donationAmount}(
-            campaignId, 
-            metadataHash
-        );
-        
+        uint256 nftSerial = donationManager.donate{value: donationAmount}(campaignId, metadataHash);
+
         uint256 donorBalanceAfter = deployerAddress.balance;
         uint256 ngoBalanceAfter = ngo.balance;
         uint256 designerBalanceAfter = designer.balance;

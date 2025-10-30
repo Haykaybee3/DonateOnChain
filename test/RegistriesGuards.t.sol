@@ -41,5 +41,3 @@ contract RegistriesGuardsTest is Test {
         designerRegistry.rejectDesigner(address(0));
     }
 }
-
-

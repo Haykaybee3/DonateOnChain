@@ -43,7 +43,8 @@ contract CampaignRegistryTest is Test {
         adminRegistry = new AdminRegistry(admin);
         ngoRegistry = new NGORegistry(admin, address(adminRegistry));
         fileManager = new FileManager(admin, address(adminRegistry), address(ngoRegistry), address(0xdead));
-        campaignRegistry = new CampaignRegistry(admin, address(adminRegistry), address(fileManager), address(ngoRegistry));
+        campaignRegistry =
+            new CampaignRegistry(admin, address(adminRegistry), address(fileManager), address(ngoRegistry));
 
         ngoRegistry.addNGO(ngo, "cid");
         fileManager.storeFileHashAdmin(metadataHash, "cid");
@@ -86,5 +87,3 @@ contract CampaignRegistryTest is Test {
         campaignRegistry.createCampaignByNGO(designer, "title", "", "img", metadataHash, 0, 7000, 2000, 1000);
     }
 }
-
-
