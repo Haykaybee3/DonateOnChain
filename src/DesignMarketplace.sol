@@ -178,9 +178,10 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
             revert Errors.InsufficientPayment(design.price, msg.value);
         }
 
-        (address ngo, , uint256 ngoShareBps, uint256 designerShareBps, ,) =
+        (address ngo, , uint256 ngoShareBps, uint256 designerShareBps, , bool active) =
             CAMPAIGN_REGISTRY.getCampaign(design.campaignId);
         if (ngo == address(0)) revert Errors.CampaignNotFound(design.campaignId);
+        if (!active) revert Errors.InactiveCampaign(design.campaignId);
 
         uint256 ngoAmount = (msg.value * ngoShareBps) / MAX_BPS;
         uint256 designerAmount = (msg.value * designerShareBps) / MAX_BPS;
