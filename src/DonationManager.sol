@@ -91,7 +91,7 @@ contract DonationManager is Ownable, ReentrancyGuard {
             address designer,
             uint256 ngoShareBps,
             uint256 designerShareBps,
-            uint256 platformShareBps,
+            ,
             bool active
         ) = CAMPAIGN_REGISTRY.getCampaign(campaignId);
         if (ngo == address(0) || designer == address(0)) revert Errors.CampaignNotFound(campaignId);
