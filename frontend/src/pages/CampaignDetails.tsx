@@ -10,7 +10,7 @@ import EditCampaignModal from '../component/EditCampaignModal'
 import { Loader2, Check, Gift, X, Trash } from 'lucide-react'
 import { campaigns as defaultCampaigns } from '../data/databank'
 import { getAllCampaigns, saveCampaign } from '../utils/firebaseStorage'
-import { donate, getCampaign as onchainGetCampaign, getDonationsByCampaign, updateCampaignOnChain, deactivateCampaign } from '../onchain/adapter'
+import { donate, getCampaign as onchainGetCampaign, getDonationsByCampaign, updateCampaignOnChain, deactivateCampaign, getCampaignMetadataCid } from '../onchain/adapter'
 import { uploadFileToIPFS } from '../utils/ipfs';
 
 const CampaignDetails = () => {
@@ -51,15 +51,28 @@ const CampaignDetails = () => {
                         const donations = await getDonationsByCampaign(numericId)
                         amountRaised = donations.totalRaisedHBAR
                     } catch {}
+                    // Fetch metadata from IPFS
+                    let metaImage = undefined;
+                    let metaGoal = undefined;
+                    try {
+                        const metaCid = await getCampaignMetadataCid(numericId);
+                        if (metaCid) {
+                            const meta = await fetch(`https://ipfs.io/ipfs/${metaCid}`).then(r => r.json()).catch(() => null);
+                            if (meta) {
+                                metaImage = meta.image;
+                                metaGoal = meta.goal;
+                            }
+                        }
+                    } catch {}
                     found = {
                         ...found,
                         id: Number(numericId),
                         onchainId: Number(numericId),
                         title: chainCampaign.title || found?.title,
                         description: chainCampaign.description || found?.description,
-                        goal: Number(chainCampaign.goalHBAR) / 1e18,
+                        goal: metaGoal !== undefined ? metaGoal : (Number(chainCampaign.goalHBAR) / 1e18),
                         ngoWallet: chainCampaign.ngo,
-                        image: chainCampaign.image || found?.image,
+                        image: metaImage || chainCampaign.image || found?.image,
                         amountRaised,
                         percentage: 0,
                         ngoName: found?.ngoName,
@@ -170,11 +183,13 @@ const CampaignDetails = () => {
                 <div className="max-w-4xl mx-auto">
                 
                     <div className="mb-8">
-                        <img
-                            src={campaign.image || campaign.coverImageFile || '/src/assets/Clothimg.png'}
-                            alt={campaign.title}
-                            className="w-full h-[400px] object-cover rounded-3xl"
-                        />
+                        {campaign.image ? (
+                            <img
+                                src={campaign.image}
+                                alt={campaign.title}
+                                className="w-full h-[400px] object-cover rounded-3xl"
+                            />
+                        ) : null}
                     </div>
 
                  
@@ -194,6 +209,7 @@ const CampaignDetails = () => {
                   
                     <div className="mb-12">
                         {(() => {
+                            // Always use campaign.goal or campaign.target; fallback to '0' only if truly missing.
                             const goal = Number(campaign.goal || campaign.target || 0);
                             const amountRaised = Number(campaign.amountRaised || 0);
                             const percentage = campaign.percentage || (goal > 0 ? (amountRaised / goal) * 100 : 0);
@@ -225,6 +241,7 @@ const CampaignDetails = () => {
                             )
                         })()}
                     </div>
+
                   
                     <div className="mb-12">
                         {isCampaignCreator && isConnected ? (
