@@ -10,14 +10,15 @@ import Bannerleft from "../assets/Bannerleft.png";
 import Bannerright from "../assets/Bannerright.png";
 import BannerNft from "../assets/BannerNft.png";
 import { useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi'
 import { useState, useEffect } from 'react';
-import { products, causes, creators } from '../data/databank';
-import { getAllGlobalDesigns, getAllCampaigns } from '../utils/firebaseStorage';
-import { syncCampaignsWithOnChain } from '../onchain/adapter';
-import { listAllCampaignsFromChain } from '../onchain/adapter';
+import { products, creators } from '../data/databank';
+import { getAllGlobalDesigns } from '../utils/firebaseStorage';
+import { listAllCampaignsFromChain, getUserRoles } from '../onchain/adapter';
 
 const Home = () => {
     const navigate = useNavigate();
+    const { address, isConnected } = useAccount()
     const [popularDesigns, setPopularDesigns] = useState<any[]>([]);
     const [popularCampaigns, setPopularCampaigns] = useState<any[]>([]);
     const [showcaseCreators, setShowcaseCreators] = useState<any[]>([]);
@@ -95,16 +96,11 @@ const Home = () => {
                 const onchainCampaigns = await listAllCampaignsFromChain();
                 const sortedCampaigns = onchainCampaigns
                     .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-                const userCampaignsOnly = sortedCampaigns.slice(0, 5);
-                const mockCampaignsNeeded = 5 - userCampaignsOnly.length;
-                const recentCampaigns = [
-                    ...userCampaignsOnly,
-                    ...causes.slice(0, mockCampaignsNeeded)
-                ];
-                setPopularCampaigns(recentCampaigns);
+                const topCampaigns = sortedCampaigns.slice(0, 5);
+                setPopularCampaigns(topCampaigns);
             } catch (error) {
                 console.error('Error loading campaigns:', error);
-                setPopularCampaigns(causes.slice(0, 5));
+                setPopularCampaigns([]);
             }
         
         setShowcaseCreators(creators.slice(0, 6));
@@ -114,6 +110,18 @@ const Home = () => {
         
         loadData();
     }, []);
+    const handleGetStarted = async () => {
+        if (isConnected && address) {
+            try {
+                const roles = await getUserRoles(address as `0x${string}`)
+                if (roles.isDesigner) {
+                    navigate('/create-design')
+                    return
+                }
+            } catch {}
+        }
+        navigate('/become-a-designer')
+    }
   return (
     <div>
       <Header />
@@ -248,7 +256,7 @@ src="/shirtfront.png"
                         {item.pieceName || design.pieceName}
                       </h3>
                       <p className="text-[14px] text-black/60 mb-3">Campaign: {design.campaign}</p>
-                      <p className="text-[22px] font-semibold">₦{design.price}</p>
+                      <p className="text-[22px] font-semibold">{design.price} HBAR</p>
                       <p className="text-xs text-gray-500 mt-1">
                         Created: {new Date(design.createdAt || Date.now()).toLocaleDateString()}
                       </p>
@@ -325,7 +333,7 @@ src="/shirtfront.png"
                 </p>
               </div>
               <div className="self-end">
-                <button className="bg-white text-black rounded-full px-6 py-3 text-sm font-semibold">
+                <button className="bg-white text-black rounded-full px-6 py-3 text-sm font-semibold" onClick={handleGetStarted}>
                   Get Started
                 </button>
               </div>
@@ -366,7 +374,7 @@ src="/shirtfront.png"
                 </p>
               </div>
               <div className="self-end">
-                <button className="bg-black text-white rounded-full px-6 py-3 text-sm font-semibold">
+                <button className="bg-black text-white rounded-full px-6 py-3 text-sm font-semibold" onClick={() => navigate('/shop')}>
                   Start Shopping
                 </button>
               </div>
@@ -384,9 +392,9 @@ src="/shirtfront.png"
           {isLoading ? (
             [...Array(5)].map((_, i) => <SkeletonCampaignCard key={i} />)
           ) : popularCampaigns.map((campaign) => {
-            const goal = campaign.goal || campaign.target || 0
-            const amountRaised = campaign.amountRaised || 0
-            const percentage = campaign.percentage || (goal > 0 ? (amountRaised / goal) * 100 : 0)
+            const target = Number(campaign.target || 0)
+            const amountRaised = Number(campaign.amountRaised || 0)
+            const percentage = campaign.percentage || (target > 0 ? (amountRaised / target) * 100 : 0)
             const imageUrl = campaign.image || campaign.coverImageFile || '/src/assets/Clothimg.png'
             
             return (
@@ -395,7 +403,7 @@ src="/shirtfront.png"
                 image={imageUrl}
                 title={campaign.title}
                 amountRaised={`${amountRaised.toLocaleString()} HBAR`}
-                goal={`${goal.toLocaleString()} HBAR`}
+                target={`${target.toLocaleString()} HBAR`}
                 percentage={percentage}
                 alt={campaign.title}
                 onClick={() => navigate(`/campaign/${campaign.onchainId || campaign.id}`)}
@@ -531,7 +539,7 @@ src="/shirtfront.png"
                   <div>
                     <h3 className="text-[22px] font-semibold leading-tight mb-1">{item.pieceName}</h3>
                     <p className="text-[14px] text-black/60 mb-3">Campaign: {item.campaign}</p>
-                    <p className="text-[22px] font-semibold">₦{item.price}</p>
+                    <p className="text-[22px] font-semibold">{item.price} HBAR</p>
                     <p className="text-xs text-gray-500 mt-1">
                       Created: {new Date(item.createdAt || Date.now()).toLocaleDateString()}
                     </p>

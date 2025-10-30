@@ -14,7 +14,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onSubmit }: CreateCampaignModalP
         campaignTitle: '',
         category: '',
         description: '',
-        target: '30000'
+        target: '0'
     });
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -75,7 +75,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onSubmit }: CreateCampaignModalP
             campaignTitle: '',
             category: '',
             description: '',
-            target: '30000'
+            target: '0'
         });
         setPreviewImage(null);
         setIsCategoryOpen(false);
@@ -183,15 +183,18 @@ const CreateCampaignModal = ({ isOpen, onClose, onSubmit }: CreateCampaignModalP
                     </div>
 
                     <div>
-                        <h3 className="text-2xl font-bold mb-3">Target</h3>
+                        <h3 className="text-2xl font-bold mb-3">Target (HBAR)</h3>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">N</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">HBAR</span>
                             <input
-                                type="text"
-                                placeholder="30000"
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                min="0"
+                                placeholder="input target amount"
                                 value={formData.target}
                                 onChange={(e) => setFormData({ ...formData, target: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-3 pl-10 text-base focus:outline-none focus:ring-2 focus:ring-black"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-3 pl-20 text-base focus:outline-none focus:ring-2 focus:ring-black"
                             />
                         </div>
                     </div>

@@ -77,13 +77,14 @@ export async function getCampaignMetadataCid(campaignId: bigint): Promise<string
   }
 }
 
-export async function listActiveCampaignsWithMeta(): Promise<Array<{ id: number; title: string; description: string; category?: string; onchainId?: bigint }>> {
+export async function listActiveCampaignsWithMeta(): Promise<Array<{ id: number; title: string; description: string; category?: string; image?: string; onchainId?: bigint }>> {
   const ids = await listActiveCampaignIds()
-  const results: Array<{ id: number; title: string; description: string; category?: string; onchainId?: bigint }> = []
+  const results: Array<{ id: number; title: string; description: string; category?: string; image?: string; onchainId?: bigint }> = []
   for (const id of ids) {
     let title = ''
     let description = ''
     let category: string | undefined
+    let image: string | undefined
     const cid = await getCampaignMetadataCid(id)
     if (cid) {
       const meta = await fetchIpfsJson(cid)
@@ -91,9 +92,13 @@ export async function listActiveCampaignsWithMeta(): Promise<Array<{ id: number;
         title = meta.title || ''
         description = meta.description || ''
         category = meta.category || undefined
+        if (meta.image) {
+          const raw = String(meta.image)
+          image = raw.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${raw.replace('ipfs://','')}` : raw
+        }
       }
     }
-    results.push({ id: Number(id), title, description, category, onchainId: id })
+    results.push({ id: Number(id), title, description, category, image, onchainId: id })
   }
   return results
 }
@@ -116,6 +121,7 @@ export async function listAllCampaignsFromChain(): Promise<any[]> {
         let description = chainCampaign.description || ''
         let category: string | undefined
         let image: string | undefined = chainCampaign.image
+        let target = Number(chainCampaign.goalHBAR)
         
         try {
           const cid = await getCampaignMetadataCid(id)
@@ -126,6 +132,9 @@ export async function listAllCampaignsFromChain(): Promise<any[]> {
               description = meta.description || description
               category = meta.category || category
               image = meta.image || image
+              if (meta.goal !== undefined && meta.goal !== null) {
+                target = Number(meta.goal)
+              }
             }
           }
         } catch {}
@@ -136,13 +145,14 @@ export async function listAllCampaignsFromChain(): Promise<any[]> {
           title,
           description,
           category,
-          goal: Number(chainCampaign.goalHBAR) / 1e18,
+          target,
           amountRaised,
           percentage: 0,
           ngoWallet: chainCampaign.ngo,
           designer: chainCampaign.designer,
           image,
           active: chainCampaign.active ?? true,
+          createdAt: Date.now(),
         })
       } catch (e) {
         console.warn(`Failed to load campaign ${id}:`, e)
@@ -151,8 +161,8 @@ export async function listAllCampaignsFromChain(): Promise<any[]> {
     }
     
     for (const campaign of campaigns) {
-      const goal = campaign.goal || 0
-      campaign.percentage = goal > 0 ? (campaign.amountRaised / goal) * 100 : 0
+      const target = campaign.target || 0
+      campaign.percentage = target > 0 ? (campaign.amountRaised / target) * 100 : 0
     }
     
     return campaigns
@@ -528,18 +538,6 @@ export async function getDesignerProfile(owner: HexAddress): Promise<DesignerPro
 export async function donate(params: { campaignId: bigint; valueHBAR: number; metadataHash?: string }) {
   if (params.valueHBAR <= 0) {
     throw new Error('Donation amount must be greater than zero')
-  }
-  
-  try {
-    const campaign = await getCampaign(params.campaignId)
-    if (!campaign.active) {
-      throw new Error('Campaign is not active. Donations are not currently accepted for this campaign.')
-    }
-  } catch (campaignError: any) {
-    if (campaignError.message?.includes('not active')) {
-      throw campaignError
-    }
-    throw new Error(`Campaign ${params.campaignId} not found or not accessible on-chain. Please verify the campaign exists.`)
   }
   
   const value = toWei(params.valueHBAR)

@@ -1,7 +1,24 @@
 import Clothimg from "../assets/Clothimg.png";
+import { useNavigate } from 'react-router-dom'
+import { useAccount } from 'wagmi'
+import { getUserRoles } from '../onchain/adapter'
 
 
 const Banner = () => {
+    const navigate = useNavigate()
+    const { address, isConnected } = useAccount()
+    const handleGetStarted = async () => {
+      if (isConnected && address) {
+        try {
+          const roles = await getUserRoles(address as `0x${string}`)
+          if (roles.isDesigner) {
+            navigate('/create-design')
+            return
+          }
+        } catch {}
+      }
+      navigate('/become-a-designer')
+    }
     return (
         <section className="px-4 md:px-8 py-12">
 <div className="bg-black rounded-3xl overflow-hidden">
@@ -36,7 +53,7 @@ const Banner = () => {
       >
         Design with purpose turn your creativity into meaningful contributions that support real-world causes.
       </p>
-      <button className="bg-white text-black rounded-full px-6 py-3 text-sm font-semibold w-fit hover:bg-gray-100 transition">
+      <button className="bg-white text-black rounded-full px-6 py-3 text-sm font-semibold w-fit hover:bg-gray-100 transition" onClick={handleGetStarted}>
         Get Started
       </button>
     </div>

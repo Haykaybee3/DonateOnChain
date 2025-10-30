@@ -99,7 +99,7 @@ const Cart = () => {
   const subtotal = calculateSubtotal();
 
   const formatPrice = (amount: number) => {
-    return Object.keys(onchainPrices).length ? `${amount.toLocaleString()} HBAR` : `₦${amount.toLocaleString()}`;
+    return `${amount.toLocaleString()} HBAR`;
   };
 
     return (

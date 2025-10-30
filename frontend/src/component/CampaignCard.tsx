@@ -4,7 +4,7 @@ type CampaignCardProps = {
     image: string
     title: string
     amountRaised: string
-    goal: string
+    target: string
     percentage: number
     alt?: string
     className?: string
@@ -15,7 +15,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
     image,
     title,
     amountRaised,
-    goal,
+    target,
     percentage,
     alt = "Campaign",
     className = "",
@@ -62,7 +62,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
                 
                
                 <div className="mt-2 text-right">
-                    <span className="text-sm text-gray-600">Target: {goal} HBAR</span>
+                    <span className="text-sm text-gray-600">Target: {target}</span>
                 </div>
             </div>
         </div>

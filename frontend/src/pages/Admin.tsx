@@ -1264,7 +1264,7 @@ const AdminPage = () => {
                               <h4 className="font-semibold text-black">{design.pieceName}</h4>
                               <p className="text-sm text-gray-600 mt-1">Campaign: {design.campaign}</p>
                               <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                                <span>Price: ₦{design.price}</span>
+                                <span>Price: {design.price} HBAR</span>
                                 <span>Type: {design.type}</span>
                               </div>
                             </div>

@@ -39,7 +39,7 @@ export const products: Product[] = [
     image: Clothimg,
     title: "Live In Balance",
     creator: "OluwaDayo",
-    price: "₦20,000",
+    price: "20,000 HBAR",
     category: "shirts",
     categoryType: "fundraisers",
     size: "M",
@@ -47,7 +47,7 @@ export const products: Product[] = [
     sizes: ["XS", "S", "M", "L", "XL"],
     description: "A beautifully designed t-shirt that represents the balance between creativity and social impact. Made with sustainable materials and featuring an elegant script design.",
     details: "100% organic cotton, pre-shrunk, machine washable. Designed and printed locally to support community artists.",
-    shipping: "Free shipping on orders over ₦15,000. Standard delivery: 3-5 business days. Express delivery: 1-2 business days.",
+    shipping: "Free shipping on orders over 15,000 HBAR. Standard delivery: 3-5 business days. Express delivery: 1-2 business days.",
     delivery: "We partner with local delivery services to ensure your order arrives safely. Tracking information provided upon shipment."
   },
   {
@@ -55,7 +55,7 @@ export const products: Product[] = [
     image: Clothimg,
     title: "Creative Freedom",
     creator: "Sarah Johnson",
-    price: "₦15,000",
+    price: "15,000 HBAR",
     category: "hoodies",
     categoryType: "bestsellers",
     size: "L",
@@ -63,7 +63,7 @@ export const products: Product[] = [
     sizes: ["S", "M", "L", "XL", "XXL"],
     description: "Express your creative freedom with this comfortable hoodie featuring minimalist design elements.",
     details: "80% cotton, 20% polyester blend. Soft fleece interior, adjustable drawstring hood.",
-    shipping: "Free shipping on orders over ₦15,000. Standard delivery: 3-5 business days.",
+    shipping: "Free shipping on orders over 15,000 HBAR. Standard delivery: 3-5 business days.",
     delivery: "Tracked delivery with signature confirmation. Safe packaging guaranteed."
   },
   {
@@ -71,7 +71,7 @@ export const products: Product[] = [
     image: Clothimg,
     title: "Artistic Vision",
     creator: "Mike Chen",
-    price: "₦35,000",
+    price: "35,000 HBAR",
     category: "caps",
     categoryType: "creators-choice",
     size: "S",
@@ -87,7 +87,7 @@ export const products: Product[] = [
     image: Clothimg,
     title: "Community Spirit",
     creator: "Aisha Okafor",
-    price: "₦25,000",
+    price: "25,000 HBAR",
     category: "sweaters",
     categoryType: "fundraisers",
     size: "M",
@@ -95,7 +95,7 @@ export const products: Product[] = [
     sizes: ["XS", "S", "M", "L", "XL"],
     description: "Celebrate community spirit with this warm and stylish sweater designed for social impact.",
     details: "100% merino wool, hand-knitted by local artisans. Soft and breathable fabric.",
-    shipping: "Free shipping on orders over ₦20,000. Standard delivery: 4-6 business days.",
+    shipping: "Free shipping on orders over 20,000 HBAR. Standard delivery: 4-6 business days.",
     delivery: "Carefully packaged to maintain quality. Tracking available upon shipment."
   },
   {
@@ -103,7 +103,7 @@ export const products: Product[] = [
     image: Clothimg,
     title: "Innovation Drive",
     creator: "David Kim",
-    price: "₦18,000",
+    price: "18,000 HBAR",
     category: "shirts",
     categoryType: "bestsellers",
     size: "L",
@@ -111,7 +111,7 @@ export const products: Product[] = [
     sizes: ["S", "M", "L", "XL"],
     description: "Drive innovation forward with this tech-inspired t-shirt supporting STEM education.",
     details: "100% cotton, moisture-wicking technology. Designed for comfort and style.",
-    shipping: "Free shipping on orders over ₦15,000. Standard delivery: 3-5 business days.",
+    shipping: "Free shipping on orders over 15,000 HBAR. Standard delivery: 3-5 business days.",
     delivery: "Express delivery available. Package protection included."
   },
   {
@@ -119,7 +119,7 @@ export const products: Product[] = [
     image: Clothimg,
     title: "Cultural Heritage",
     creator: "Fatima Al-Zahra",
-    price: "₦30,000",
+    price: "30,000 HBAR",
     category: "hoodies",
     categoryType: "creators-choice",
     size: "M",
@@ -135,7 +135,7 @@ export const products: Product[] = [
     image: Clothimg,
     title: "Future Leaders",
     creator: "James Wilson",
-    price: "₦22,000",
+    price: "22,000 HBAR",
     category: "caps",
     categoryType: "fundraisers",
     size: "L",
@@ -143,7 +143,7 @@ export const products: Product[] = [
     sizes: ["S", "M", "L", "XL"],
     description: "Support future leaders with this cap designed to inspire the next generation.",
     details: "100% cotton twill, structured design. Adjustable closure for perfect fit.",
-    shipping: "Free shipping on orders over ₦20,000. Standard delivery: 2-4 business days.",
+    shipping: "Free shipping on orders over 20,000 HBAR. Standard delivery: 2-4 business days.",
     delivery: "Tracked delivery with confirmation. Safe packaging guaranteed."
   },
   {
@@ -151,7 +151,7 @@ export const products: Product[] = [
     image: Clothimg,
     title: "Sustainable Future",
     creator: "Elena Rodriguez",
-    price: "₦28,000",
+    price: "28,000 HBAR",
     category: "sweaters",
     categoryType: "bestsellers",
     size: "S",
