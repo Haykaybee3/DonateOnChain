@@ -10,6 +10,25 @@ import ShopImg from '../assets/ShopImg.png'
 import { ChevronDown } from 'lucide-react'
 import { listAllCampaignsFromChain } from '../onchain/adapter'
 
+const CACHE_TTL_MS = 5 * 60 * 1000
+
+const getCache = (key: string) => {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    try {
+        const parsed = JSON.parse(raw)
+        if (!parsed || !parsed.data || !parsed.ts) return null
+        if (Date.now() - parsed.ts > CACHE_TTL_MS) return null
+        return parsed.data
+    } catch { return null }
+}
+
+const setCache = (key: string, data: any) => {
+    try {
+        localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }))
+    } catch {}
+}
+
 const Campaign = () => {
     const navigate = useNavigate()
     const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false)
@@ -38,6 +57,13 @@ const Campaign = () => {
     useEffect(() => {
         const loadCampaigns = async () => {
             try {
+                const cacheKey = 'campaigns_all'
+                const cached = getCache(cacheKey)
+                if (cached) {
+                    setAllCampaigns(cached)
+                    setFilteredCampaigns(cached)
+                    setIsLoading(false)
+                }
                 const onchain = await listAllCampaignsFromChain()
                 const withPercent = onchain.map(c => {
                     const target = Number(c.target) || 0
@@ -52,6 +78,7 @@ const Campaign = () => {
                 })
                 setAllCampaigns(withPercent)
                 setFilteredCampaigns(withPercent)
+                setCache(cacheKey, withPercent)
                 setIsLoading(false)
             } catch (error) {
                 console.error('Error loading on-chain campaigns:', error)

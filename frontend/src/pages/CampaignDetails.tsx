@@ -11,6 +11,25 @@ import { Loader2, Check, Gift, Trash } from 'lucide-react'
 import { donate, getCampaign as onchainGetCampaign, getDonationsByCampaign, updateCampaignOnChain, deactivateCampaign, getCampaignMetadataCid, listAllCampaignsFromChain } from '../onchain/adapter'
 import { uploadFileToIPFS } from '../utils/ipfs';
 
+const CACHE_TTL_MS = 5 * 60 * 1000
+
+const getCache = (key: string) => {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    try {
+        const parsed = JSON.parse(raw)
+        if (!parsed || !parsed.data || !parsed.ts) return null
+        if (Date.now() - parsed.ts > CACHE_TTL_MS) return null
+        return parsed.data
+    } catch { return null }
+}
+
+const setCache = (key: string, data: any) => {
+    try {
+        localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }))
+    } catch {}
+}
+
 const CampaignDetails = () => {
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
@@ -33,6 +52,12 @@ const CampaignDetails = () => {
     useEffect(() => {
         const loadCampaign = async () => {
                 setIsLoading(true)
+                const cacheKey = `campaign_${id}`
+                const cached = getCache(cacheKey)
+                if (cached) {
+                    setCampaign(cached)
+                    setIsLoading(false)
+                }
                 try {
                     const numericId = BigInt(id || '0')
                     const chainCampaign = await onchainGetCampaign(numericId)
@@ -79,6 +104,7 @@ const CampaignDetails = () => {
                 const target = campaignObj.target || 0
                 campaignObj.percentage = target > 0 ? (amountRaised / target) * 100 : 0
                     setCampaign(campaignObj)
+                    setCache(cacheKey, campaignObj)
             } catch {
                 setCampaign(null)
             } finally {
@@ -87,6 +113,9 @@ const CampaignDetails = () => {
         }
         const loadRelated = async () => {
             try {
+                const cacheKey = `campaigns_related_ex_${id}`
+                const cached = getCache(cacheKey)
+                if (cached) setAllCampaigns(cached)
                 const list = await listAllCampaignsFromChain()
                 const currentId = Number(id || '0')
                 const filtered = list.filter((c: any) => Number(c.onchainId || c.id) !== currentId)
@@ -97,8 +126,9 @@ const CampaignDetails = () => {
                     return { ...c, goal, amountRaised: raised, percentage }
                 })
                 setAllCampaigns(mapped)
+                setCache(cacheKey, mapped)
             } catch {
-                setAllCampaigns([])
+                if (!getCache(`campaigns_related_ex_${id}`)) setAllCampaigns([])
             }
         }
         loadCampaign()
@@ -171,26 +201,25 @@ const CampaignDetails = () => {
             setTxHash(receipt.transactionHash)
             setDonationSuccess(true)
             setDonationAmount('')
-            
             const numericId = BigInt(id || '0')
             const donations = await getDonationsByCampaign(numericId)
             const goal = campaign.target || 0
             const updatedAmountRaised = donations.totalRaisedHBAR
             const updatedPercentage = goal > 0 ? (updatedAmountRaised / goal) * 100 : 0
-            
-            setCampaign({
+            const updated = {
                 ...campaign,
                 amountRaised: updatedAmountRaised,
                 percentage: updatedPercentage
-            })
-            
+            }
+            setCampaign(updated)
+            setCache(`campaign_${id}`, updated)
             setTimeout(() => {
                 setDonationSuccess(false)
                 setTxHash(null)
             }, 5000)
         } catch (e: any) {
             console.error('Donation failed', e)
-            setDonationError(e?.message || 'Donation failed. Please try again.')
+            setDonationError('Unable to make donation. Please try again.')
             setTimeout(() => {
                 setDonationError(null)
             }, 5000)
