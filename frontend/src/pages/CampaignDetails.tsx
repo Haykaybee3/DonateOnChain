@@ -7,10 +7,8 @@ import Banner from '../component/Banner'
 import CampaignCard from '../component/CampaignCard'
 import Button from '../component/Button'
 import EditCampaignModal from '../component/EditCampaignModal'
-import { Loader2, Check, Gift, X, Trash } from 'lucide-react'
-import { campaigns as defaultCampaigns } from '../data/databank'
-import { getAllCampaigns, saveCampaign } from '../utils/firebaseStorage'
-import { donate, getCampaign as onchainGetCampaign, getDonationsByCampaign, updateCampaignOnChain, deactivateCampaign, getCampaignMetadataCid } from '../onchain/adapter'
+import { Loader2, Check, Gift, Trash } from 'lucide-react'
+import { donate, getCampaign as onchainGetCampaign, getDonationsByCampaign, updateCampaignOnChain, deactivateCampaign, getCampaignMetadataCid, listAllCampaignsFromChain } from '../onchain/adapter'
 import { uploadFileToIPFS } from '../utils/ipfs';
 
 const CampaignDetails = () => {
@@ -20,6 +18,7 @@ const CampaignDetails = () => {
     const [donationAmount, setDonationAmount] = useState<string>('')
     const [campaign, setCampaign] = useState<any>(null)
     const [allCampaigns, setAllCampaigns] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
     const [isCampaignCreator, setIsCampaignCreator] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isUploadingCampaign, setIsUploadingCampaign] = useState(false)
@@ -28,82 +27,82 @@ const CampaignDetails = () => {
     const [donationSuccess, setDonationSuccess] = useState(false)
     const [donationError, setDonationError] = useState<string | null>(null)
     const [txHash, setTxHash] = useState<string | null>(null)
-    const [isCampaignCreateError, setIsCampaignCreateError] = useState(false);
-    const [campaignErrorText, setCampaignErrorText] = useState('');
+    
 
 
     useEffect(() => {
         const loadCampaign = async () => {
-            try {
-                const firebaseCampaigns = await getAllCampaigns()
-                const fallback = [...firebaseCampaigns, ...defaultCampaigns]
-                let found = fallback.find(c => 
-                    c.id === parseInt(id || '1') || 
-                    c.id?.toString() === id || 
-                    c.onchainId === parseInt(id || '1') ||
-                    c.onchainId?.toString() === id
-                )
-                let baseCampaignObj = found || {};
+                setIsLoading(true)
                 try {
                     const numericId = BigInt(id || '0')
                     const chainCampaign = await onchainGetCampaign(numericId)
-                    let amountRaised = found?.amountRaised || 0
-                    let metaImage = undefined;
-                    let metaGoal = undefined;
-                    let metaTitle = '';
-                    let metaDesc = '';
-                    let metaLoaded = false;
-                    try {
-                        const metaCid = await getCampaignMetadataCid(numericId);
+                let amountRaised = 0
+                let metaImage: string | undefined = undefined
+                let metaGoal: number | undefined = undefined
+                let metaTitle = ''
+                let metaDesc = ''
+                let metaLoaded = false
+                try {
+                    const metaCid = await getCampaignMetadataCid(numericId)
                         if (metaCid) {
-                            const meta = await fetch(`https://ipfs.io/ipfs/${metaCid}`).then(r => r.json()).catch(() => null);
+                        const meta = await fetch(`https://ipfs.io/ipfs/${metaCid}`).then(r => r.json()).catch(() => null)
                             if (meta) {
-                                metaImage = meta.image;
-                                metaGoal = meta.goal;
-                                metaTitle = meta.title;
-                                metaDesc = meta.description;
-                                metaLoaded = true;
+                            metaImage = meta.image
+                            metaGoal = meta.goal
+                            metaTitle = meta.title
+                            metaDesc = meta.description
+                            metaLoaded = true
                             }
                         }
                     } catch {}
                     if (!chainCampaign && !metaLoaded) {
                         setCampaign(null)
-                        setAllCampaigns(fallback.filter(c => (c.id !== parseInt(id || '1') && c.id?.toString() !== id)))
-                        return;
+                    setAllCampaigns([])
+                    return
                     }
                     try {
                         const donations = await getDonationsByCampaign(numericId)
                         amountRaised = donations.totalRaisedHBAR
                     } catch {}
-                    const campaignObj = {
-                        ...baseCampaignObj,
+                const campaignObj: any = {
                         id: Number(numericId),
                         onchainId: Number(numericId),
-                        title: metaTitle || chainCampaign?.title || found?.title,
-                        description: metaDesc || chainCampaign?.description || found?.description,
-                        goal: metaGoal !== undefined ? metaGoal : (chainCampaign ? Number(chainCampaign.goalHBAR) / 1e18 : 0),
+                    title: metaTitle || chainCampaign?.title,
+                    description: metaDesc || chainCampaign?.description,
+                    target: metaGoal !== undefined ? metaGoal : (chainCampaign ? Number(chainCampaign.goalHBAR) : 0),
                         ngoWallet: chainCampaign?.ngo,
-                        image: metaImage || chainCampaign?.image || found?.image,
+                    image: metaImage || chainCampaign?.image,
                         amountRaised,
                         percentage: 0,
-                        ngoName: found?.ngoName,
                         active: chainCampaign?.active ?? true,
                     }
-                    const goal = campaignObj.goal || 0
-                    campaignObj.percentage = goal > 0 ? (amountRaised / goal) * 100 : 0
+                const target = campaignObj.target || 0
+                campaignObj.percentage = target > 0 ? (amountRaised / target) * 100 : 0
                     setCampaign(campaignObj)
-                    setAllCampaigns(fallback.filter(c => (c.id !== parseInt(id || '1') && c.id?.toString() !== id)))
-                    return;
-                } catch {}
-                // fallback (did not find onchain, try to recover from default)
-                setCampaign(found)
-                setAllCampaigns(fallback.filter(c => (c.id !== parseInt(id || '1') && c.id?.toString() !== id)))
-            } catch (error) {
+            } catch {
                 setCampaign(null)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        const loadRelated = async () => {
+            try {
+                const list = await listAllCampaignsFromChain()
+                const currentId = Number(id || '0')
+                const filtered = list.filter((c: any) => Number(c.onchainId || c.id) !== currentId)
+                const mapped = filtered.map((c: any) => {
+                    const goal = Number(c.goal) || 0
+                    const raised = Number(c.amountRaised) || 0
+                    const percentage = goal > 0 ? (raised / goal) * 100 : 0
+                    return { ...c, goal, amountRaised: raised, percentage }
+                })
+                setAllCampaigns(mapped)
+            } catch {
                 setAllCampaigns([])
             }
         }
         loadCampaign()
+        loadRelated()
     }, [id])
 
     
@@ -112,11 +111,26 @@ const CampaignDetails = () => {
             const isCreator = campaign.ngoWallet?.toLowerCase() === address.toLowerCase() ||
                              campaign.walletAddress?.toLowerCase() === address.toLowerCase()
             setIsCampaignCreator(isCreator)
-            console.log('Is campaign creator:', isCreator)
+            
         } else {
             setIsCampaignCreator(false)
         }
     }, [campaign, address, isConnected])
+
+    if (isLoading) {
+        return (
+            <div>
+                <Header />
+                <div className="min-h-screen flex items-center justify-center">
+                    <div className="text-center">
+                        <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-black" />
+                        <h1 className="text-xl font-semibold">Loading campaign...</h1>
+                    </div>
+                </div>
+                <Footer />
+            </div>
+        )
+    }
 
     if (!campaign) {
         return (
@@ -160,7 +174,7 @@ const CampaignDetails = () => {
             
             const numericId = BigInt(id || '0')
             const donations = await getDonationsByCampaign(numericId)
-            const goal = campaign.goal || campaign.target || 0
+            const goal = campaign.target || 0
             const updatedAmountRaised = donations.totalRaisedHBAR
             const updatedPercentage = goal > 0 ? (updatedAmountRaised / goal) * 100 : 0
             
@@ -220,10 +234,9 @@ const CampaignDetails = () => {
                   
                     <div className="mb-12">
                         {(() => {
-                            // Always use campaign.goal or campaign.target; fallback to '0' only if truly missing.
-                            const goal = Number(campaign.goal || campaign.target || 0);
+                            const target = Number(campaign.target || 0);
                             const amountRaised = Number(campaign.amountRaised || 0);
-                            const percentage = campaign.percentage || (goal > 0 ? (amountRaised / goal) * 100 : 0);
+                            const percentage = campaign.percentage || (target > 0 ? (amountRaised / target) * 100 : 0);
                             return (
                                 <>
                                     <div className="relative h-16 rounded-full overflow-hidden bg-white border-2 border-gray-300">
@@ -246,7 +259,7 @@ const CampaignDetails = () => {
                                     
                                   
                                     <div className="mt-2 text-right">
-                                        <span className="text-base text-gray-600">Target: {goal.toFixed(2)} HBAR</span>
+                                        <span className="text-base text-gray-600">Target: {target.toFixed(2)} HBAR</span>
                                     </div>
                                 </>
                             )
@@ -372,20 +385,19 @@ const CampaignDetails = () => {
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                     {allCampaigns.slice(0, 5).map((relatedCampaign) => {
-                        const goal = relatedCampaign.goal || relatedCampaign.target || 0
-                        const amountRaised = relatedCampaign.amountRaised || 0
-                        const percentage = relatedCampaign.percentage || (goal > 0 ? (amountRaised / goal) * 100 : 0)
-                        
+                        const target = Number(relatedCampaign.target || 0)
+                        const amountRaised = Number(relatedCampaign.amountRaised || 0)
+                        const percentage = relatedCampaign.percentage || (target > 0 ? (amountRaised / target) * 100 : 0)
                         return (
                             <CampaignCard
-                                key={relatedCampaign.id}
+                                key={relatedCampaign.onchainId || relatedCampaign.id}
                                 image={relatedCampaign.image || relatedCampaign.coverImageFile}
                                 title={relatedCampaign.title}
-                                amountRaised={amountRaised}
-                                goal={goal}
+                                amountRaised={`${amountRaised.toLocaleString()} HBAR`}
+                                target={`${target.toLocaleString()} HBAR`}
                                 percentage={percentage}
                                 alt={relatedCampaign.title}
-                                onClick={() => navigate(`/campaign/${relatedCampaign.id}`)}
+                                onClick={() => navigate(`/campaign/${relatedCampaign.onchainId || relatedCampaign.id}`)}
                             />
                         )
                     })}
@@ -417,10 +429,8 @@ const CampaignDetails = () => {
                             setIsCampaignUpdated(true);
                             setTimeout(() => setIsCampaignUpdated(false), 4000);
                             setIsEditModalOpen(false);
-                            // Optionally refetch campaign here
-                        } catch (err) {
-                            setIsCampaignCreateError(true)
-                            setCampaignErrorText(err?.message || 'Failed to update campaign');
+                        } catch (err: any) {
+                            
                         } finally {
                             setIsUploadingCampaign(false);
                         }

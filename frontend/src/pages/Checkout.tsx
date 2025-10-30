@@ -97,7 +97,7 @@ const Checkout = () => {
     const subtotal = calculateSubtotal()
     const total = subtotal + shippingCost
 
-    const formatPrice = (amount: number) => { return `₦${amount.toLocaleString()}` }
+    const formatPrice = (amount: number) => { return `${amount.toLocaleString()} HBAR` }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target

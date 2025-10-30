@@ -244,7 +244,7 @@ const ProductPage = () => {
                             <h1 className="text-3xl md:text-4xl font-bold text-black mb-2">{customDesign ? customDesign.pieceName : product.title}</h1>
                             <p className="text-lg text-black mb-2">{customDesign ? `Campaign: ${customDesign.campaign}` : `By ${product.creator}`}</p>
                             {customDesign && (<p className="text-base text-gray-600 mb-4">Created by: {isConnected && isMyDesign ? 'You' : (profileName || (customDesign.isNgo ? 'An NGO' : 'A User'))}</p>)}
-                            <p className="text-2xl font-semibold text-black mb-8">{customDesign ? `₦${customDesign.price}` : product.price}</p>
+                            <p className="text-2xl font-semibold text-black mb-8">{customDesign ? `${customDesign.price} HBAR` : `${parseInt(String(product.price).replace(/[^\d]/g, '')).toLocaleString()} HBAR`}</p>
                             {customDesign && isConnected && isMyDesign ? (
                                 <div className="flex gap-3 mb-8">
                                     <button onClick={() => navigate('/create-design', { state: { editDesign: customDesign } })} className="flex-1 bg-black text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">Edit Design</button>

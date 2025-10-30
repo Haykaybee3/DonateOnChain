@@ -649,28 +649,6 @@ export const uploadCampaignImageToFirebase = async () => {
   return null;
 }
 
-export const saveCampaign = async (campaignData: any) => {
-  return false;
-}
-
-export const getAllCampaigns = async () => {
-  return [];
-}
-
-export const deleteCampaign = async (campaignId: number | string) => {
-  try {
-    const idStr = campaignId.toString()
-    await deleteFromFirebase('campaigns', idStr)
-    const existingCampaigns = JSON.parse(localStorage.getItem('campaigns') || '[]')
-    const filtered = existingCampaigns.filter((c: any) => (c.onchainId?.toString() || c.id?.toString()) !== idStr)
-    localStorage.setItem('campaigns', JSON.stringify(filtered))
-    return true
-  } catch (error) {
-    console.error('Error deleting campaign:', error)
-    return false
-  }
-}
-
 export const deleteCampaignStorageAssets = async (campaignId: number | string) => {
   try {
     const path = `campaignImages/${campaignId}/cover.png`
@@ -692,7 +670,7 @@ export const deleteCampaignEverywhere = async (campaignId: number) => {
       console.warn('Could not resolve/unpin campaign metadata CID for', campaignId)
     }
     await deleteCampaignStorageAssets(campaignId)
-    await deleteCampaign(campaignId)
+    await deleteFromFirebase('campaigns', campaignId.toString())
     return true
   } catch (e) {
     console.error('Failed full deletion for campaign', campaignId, e)

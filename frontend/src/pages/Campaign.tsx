@@ -8,8 +8,7 @@ import FilterButton from '../component/FilterButton'
 import { SkeletonCampaignCard } from '../component/Skeleton'
 import ShopImg from '../assets/ShopImg.png'
 import { ChevronDown } from 'lucide-react'
-import { getAllCampaigns } from '../utils/firebaseStorage'
-import { syncCampaignsWithOnChain, listAllCampaignsFromChain } from '../onchain/adapter'
+import { listAllCampaignsFromChain } from '../onchain/adapter'
 
 const Campaign = () => {
     const navigate = useNavigate()
@@ -41,10 +40,15 @@ const Campaign = () => {
             try {
                 const onchain = await listAllCampaignsFromChain()
                 const withPercent = onchain.map(c => {
-                    const goal = Number(c.goal) || 0
+                    const target = Number(c.target) || 0
                     const raised = Number(c.amountRaised) || 0
-                    const percentage = goal > 0 ? (raised / goal) * 100 : 0
-                    return { ...c, goal, amountRaised: raised, percentage }
+                    const percentage = target > 0 ? (raised / target) * 100 : 0
+                    const category = (c.category || '')
+                        .toString()
+                        .trim()
+                        .toLowerCase()
+                        .replace(/\s+/g, '-')
+                    return { ...c, category, target, amountRaised: raised, percentage }
                 })
                 setAllCampaigns(withPercent)
                 setFilteredCampaigns(withPercent)
@@ -89,7 +93,7 @@ const Campaign = () => {
                             textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
                         }}
                     >
-                        Donations Changes Lives
+                        Donations Change Lives
                     </h1>
                 </div>
             </section>
@@ -171,9 +175,9 @@ const Campaign = () => {
                             
                              const imageUrl = campaign.image || campaign.coverImageFile
                              const campaignTitle = campaign.title || campaign.name
-                             const goal = campaign.goal || campaign.target || 0
-                             const amountRaised = campaign.amountRaised || 0
-                             const percentage = campaign.percentage || (goal > 0 ? (amountRaised / goal) * 100 : 0)
+                             const target = Number(campaign.target || 0)
+                             const amountRaised = Number(campaign.amountRaised || 0)
+                             const percentage = campaign.percentage || (target > 0 ? (amountRaised / target) * 100 : 0)
                              
                              return (
                                  <CampaignCard
@@ -181,7 +185,7 @@ const Campaign = () => {
                                      image={imageUrl}
                                      title={campaignTitle}
                                      amountRaised={`${amountRaised.toLocaleString()} HBAR`}
-                                     goal={`${goal.toLocaleString()} HBAR`}
+                                     target={`${target.toLocaleString()} HBAR`}
                                      percentage={percentage}
                                      alt={campaignTitle}
                                      onClick={() => navigate(`/campaign/${campaign.onchainId || campaign.id}`)}

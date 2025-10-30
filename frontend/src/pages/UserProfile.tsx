@@ -6,8 +6,8 @@ import { Plus, X, Camera, Copy, Check, Loader2, XCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
-import { getUserDesigns, getUserDonations, getUserPurchases, saveUserProfileWithImages, getUserProfile, migrateDesignImagesToFirebase, getDesignerApplicationByWallet, getNgoApplicationByWallet, getAllCampaigns, getOrdersByWallet } from '../utils/firebaseStorage';
-import { syncCampaignsWithOnChain, getUserProofNFTs } from '../onchain/adapter';
+import { getUserDesigns, saveUserProfileWithImages, getUserProfile, migrateDesignImagesToFirebase, getDesignerApplicationByWallet, getNgoApplicationByWallet, getOrdersByWallet } from '../utils/firebaseStorage';
+import { getUserProofNFTs } from '../onchain/adapter';
 import { getUserRoles, createCampaignByNGO } from '../onchain/adapter';
 import { listAllCampaignsFromChain } from '../onchain/adapter';
 import CreateCampaignModal from '../component/CreateCampaignModal';
@@ -260,20 +260,8 @@ const UserProfile = () => {
                     const chainCampaigns = await listAllCampaignsFromChain();
                     const userChain = (chainCampaigns || []).filter((c: any) => c.ngoWallet?.toLowerCase() === address.toLowerCase());
                     setCreatedCampaigns(userChain);
-                    return;
                 } catch (e) {
-                    console.error('Failed on-chain campaign load', e);
-                }
-                try {
-                    const allCampaigns = await getAllCampaigns();
-                    const syncedCampaigns = await syncCampaignsWithOnChain(allCampaigns);
-                    const userCampaigns = syncedCampaigns.filter((c: any) => c.ngoWallet?.toLowerCase() === address.toLowerCase());
-                    setCreatedCampaigns(userCampaigns);
-                } catch (error) {
-                    console.error('Error loading campaigns from Firebase:', error);
-                    const savedCampaigns = JSON.parse(localStorage.getItem('campaigns') || '[]');
-                    const userCampaigns = savedCampaigns.filter((c: any) => c.ngoWallet?.toLowerCase() === address.toLowerCase());
-                    setCreatedCampaigns(userCampaigns);
+                    setCreatedCampaigns([]);
                 }
             }
         };
@@ -296,51 +284,39 @@ const UserProfile = () => {
 
     useEffect(() => {
         const calculateStats = async () => {
-            let donationHistory: any[] = [];
-            let purchaseHistory: any[] = [];
-            
             if (address && isConnected) {
                 try {
-                    donationHistory = await getUserDonations(address);
-                    const allPurchases = await getUserPurchases(address);
-                    purchaseHistory = allPurchases.filter((purchase: any) => 
-                        purchase.creatorWallet?.toLowerCase() === address.toLowerCase() ||
-                        purchase.creatorWallet === ''
-                    );
+                    
                 } catch (error) {
                     console.error('Error loading stats from Firebase:', error);
-                    donationHistory = JSON.parse(localStorage.getItem('userDonations') || '[]');
-                    const allPurchases = JSON.parse(localStorage.getItem('userPurchases') || '[]');
-                    purchaseHistory = allPurchases.filter((purchase: any) => 
-                        purchase.creatorWallet?.toLowerCase() === address.toLowerCase()
-                    );
+                    // donationHistory = JSON.parse(localStorage.getItem('userDonations') || '[]');
+                    // purchaseHistory = allPurchases.filter((purchase: any) => 
+                    //     purchase.creatorWallet?.toLowerCase() === address.toLowerCase()
+                    // );
                 }
             } else {
-                donationHistory = JSON.parse(localStorage.getItem('userDonations') || '[]');
-                const allPurchases = JSON.parse(localStorage.getItem('userPurchases') || '[]');
-                if (address) {
-                    purchaseHistory = allPurchases.filter((purchase: any) => 
-                        purchase.creatorWallet?.toLowerCase() === address.toLowerCase()
-                    );
-                }
+                // donationHistory = JSON.parse(localStorage.getItem('userDonations') || '[]');
+                // purchaseHistory = allPurchases.filter((purchase: any) => 
+                //     purchase.creatorWallet?.toLowerCase() === address.toLowerCase()
+                // );
             }
         
-        const uniqueCampaigns = new Set(donationHistory.map((donation: any) => donation.campaign).filter(Boolean));
+        // const uniqueCampaigns = new Set(donationHistory.map((donation: any) => donation.campaign).filter(Boolean));
         
-        const totalDonated = donationHistory.reduce((sum: number, donation: any) => {
-            const amount = parseFloat(donation.amount?.replace(/[^\d.]/g, '') || '0');
-            return sum + amount;
-        }, 0);
+        // const totalDonated = donationHistory.reduce((sum: number, donation: any) => {
+        //     const amount = parseFloat(donation.amount?.replace(/[^\d.]/g, '') || '0');
+        //     return sum + amount;
+        // }, 0);
         
-        const totalProfit = purchaseHistory.reduce((sum: number, purchase: any) => {
-            const amount = parseFloat(purchase.amount?.replace(/[^\d.]/g, '') || '0');
-            return sum + amount;
-        }, 0);
+        // const totalProfit = purchaseHistory.reduce((sum: number, purchase: any) => {
+        //     const amount = parseFloat(purchase.amount?.replace(/[^\d.]/g, '') || '0');
+        //     return sum + amount;
+        // }, 0);
         
         setStatistics({
-            causesSupported: uniqueCampaigns.size,
-            totalDonated: totalDonated,
-            totalProfit: totalProfit,
+            causesSupported: 0, // No longer calculated from donationHistory
+            totalDonated: 0, // No longer calculated from donationHistory
+            totalProfit: 0, // No longer calculated from purchaseHistory
                 totalDesigns: createdDesigns.length
         });
         setIsLoading(false);
@@ -491,42 +467,13 @@ const UserProfile = () => {
             if (!metadataCid) throw new Error('Failed to upload metadata to IPFS');
             await storeHashViaRelayer(imageCid, address!);
             await storeHashViaRelayer(metadataCid, address!);
-            const { campaignId, receipt } = await createCampaignByNGO({ designer: address as `0x${string}`, title: campaignData.campaignTitle, description: campaignData.description, imageCid: imageCid, metadataCid, targetHBAR: goal });
+            const { receipt } = await createCampaignByNGO({ designer: address as `0x${string}`, title: campaignData.campaignTitle, description: campaignData.description, imageCid: imageCid, metadataCid, targetHBAR: goal });
             
             const receiptStatus = receipt?.status as string | number | undefined
             if (!receipt || receiptStatus === 'reverted' || receiptStatus === 0 || receiptStatus === '0x0') {
                 throw new Error('Campaign creation transaction failed on-chain')
             }
             
-            const onchainCampaignId = Number(campaignId)
-            const campaign = {
-                id: onchainCampaignId,
-                onchainId: onchainCampaignId,
-                title: campaignData.campaignTitle,
-                category: campaignData.category.toLowerCase().replace(/\s+/g, '-'),
-                description: campaignData.description,
-                goal: campaignData.target,
-                coverImageFile: campaignData.coverImageFile,
-                ngoName: profileData.name,
-                ngoWallet: address,
-                amountRaised: 0,
-                percentage: 0,
-                createdAt: new Date().toISOString(),
-                txHash: receipt.transactionHash,
-                active: true
-            }
-            
-            try {
-                await (await import('../utils/firebaseStorage')).saveCampaign(campaign)
-                console.log(`Campaign ${onchainCampaignId} successfully created on-chain and saved to Firebase`)
-            } catch (saveError) {
-                console.error('Failed to save campaign to Firebase, but campaign is on-chain:', saveError)
-            }
-            if (address) {
-                const allCampaigns = await getAllCampaigns();
-                const myCampaigns = allCampaigns.filter((c: any) => c.ngoWallet?.toLowerCase() === address.toLowerCase())
-                setCreatedCampaigns(myCampaigns)
-            }
             setIsCampaignCreatedSuccessfully(true)
             setIsCreateCampaignModalOpen(false)
             // New logic: refetch campaigns after creation
@@ -914,7 +861,7 @@ const UserProfile = () => {
                                                 {design.pieceName}
                                             </h3>
                                             <p className="text-[14px] text-black/60 mb-3">Campaign: {design.campaign}</p>
-                                            <p className="text-[22px] font-semibold">₦{design.price}</p>
+                                            <p className="text-[22px] font-semibold">{design.price} HBAR</p>
                                             <p className="text-xs text-gray-500 mt-1">
                                                 Created: {new Date(design.createdAt).toLocaleDateString()}
                                             </p>
@@ -985,18 +932,18 @@ const UserProfile = () => {
                                             <div className="mb-3">
                                                 <div className="flex justify-between text-xs text-gray-500 mb-1">
                                                     <span>Raised: {campaign.amountRaised || 0} HBAR</span>
-                                                    <span>Goal: {campaign.goal || 0} HBAR</span>
+                                                    <span>Target: {campaign.target || 0} HBAR</span>
                                                 </div>
                                                 <div className="w-full bg-gray-200 rounded-full h-2">
                                                     <div 
                                                         className="bg-black h-2 rounded-full" 
-                                                        style={{ width: `${Math.min((campaign.amountRaised || 0) / (campaign.goal || 1) * 100, 100)}%` }}
+                                                        style={{ width: `${Math.min((campaign.amountRaised || 0) / (campaign.target || 1) * 100, 100)}%` }}
                                                     ></div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-xs text-gray-500">
-                                                    Created: {new Date(campaign.createdAt).toLocaleDateString()}
+                                                    Created: {new Date(campaign.createdAt || Date.now()).toLocaleDateString()}
                                                 </span>
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                                     campaign.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
@@ -1168,7 +1115,7 @@ const UserProfile = () => {
                         setIsCreateCampaignModalOpen(false);
                         if (address && isConnected && isNgo) {
                             try {
-                                const allCampaigns = await getAllCampaigns();
+                                const allCampaigns = await listAllCampaignsFromChain();
                                 const userCampaigns = allCampaigns.filter((c: any) => 
                                     c.ngoWallet?.toLowerCase() === address.toLowerCase()
                                 );

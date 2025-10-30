@@ -52,7 +52,7 @@ const Shop = () => {
 
   
      const getPriceRange = (priceString: string) => {
-        const price = parseInt(priceString.replace(/[₦,]/g, ''))
+        const price = parseInt(priceString.replace(/[^\d]/g, ''))
         if (price < 10000) return 'under-10000'
         if (price >= 10000 && price <= 25000) return '10000-25000'
         if (price > 25000 && price <= 50000) return '25000-50000'
@@ -371,7 +371,7 @@ const Shop = () => {
                                                         checked={filters.priceRange.includes('under-10000')}
                                                         onChange={() => handleFilterChange('priceRange', 'under-10000')}
                                                     />
-                                                    <span className="text-sm">Under ₦10,000</span>
+                                                    <span className="text-sm">Under 10,000 HBAR</span>
                                                 </label>
                                                 <label className="flex items-center">
                                                     <input 
@@ -380,7 +380,7 @@ const Shop = () => {
                                                         checked={filters.priceRange.includes('10000-25000')}
                                                         onChange={() => handleFilterChange('priceRange', '10000-25000')}
                                                     />
-                                                    <span className="text-sm">₦10,000 - ₦25,000</span>
+                                                    <span className="text-sm">10,000 - 25,000 HBAR</span>
                                                 </label>
                                                 <label className="flex items-center">
                                                     <input 
@@ -389,7 +389,7 @@ const Shop = () => {
                                                         checked={filters.priceRange.includes('25000-50000')}
                                                         onChange={() => handleFilterChange('priceRange', '25000-50000')}
                                                     />
-                                                    <span className="text-sm">₦25,000 - ₦50,000</span>
+                                                    <span className="text-sm">25,000 - 50,000 HBAR</span>
                                                 </label>
                                                 <label className="flex items-center">
                                                     <input 
@@ -398,7 +398,7 @@ const Shop = () => {
                                                         checked={filters.priceRange.includes('above-50000')}
                                                         onChange={() => handleFilterChange('priceRange', 'above-50000')}
                                                     />
-                                                    <span className="text-sm">Above ₦50,000</span>
+                                                    <span className="text-sm">Above 50,000 HBAR</span>
                                                 </label>
                                             </div>
                                         </div>

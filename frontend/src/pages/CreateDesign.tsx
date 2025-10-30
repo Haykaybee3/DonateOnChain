@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi'
 import Header from '../component/Header'
 import Footer from '../component/Footer'
 import Button from '../component/Button'
-import { ChevronDown, Upload, X, CheckCircle } from 'lucide-react'
+import { ChevronDown, Upload, X, CheckCircle, XCircle } from 'lucide-react'
 import { saveUserDesign, saveNGODesign, saveToGlobalDesigns, uploadDesignImageToFirebase, saveDesignIndex } from '../utils/firebaseStorage'
 import { uploadFileToIPFS, uploadMetadataToIPFS } from '../utils/ipfs'
 import { keccak256, stringToHex } from 'viem'
@@ -27,11 +27,13 @@ const CreateDesign = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false)
     const [showProcessingModal, setShowProcessingModal] = useState(false)
     const [countdown, setCountdown] = useState(15)
+    const [showErrorModal, setShowErrorModal] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
     const [editDesignId, setEditDesignId] = useState<number | null>(null)
     const [existingFrontImage, setExistingFrontImage] = useState<string | null>(null)
     const [existingBackImage, setExistingBackImage] = useState<string | null>(null)
     const [campaigns, setCampaigns] = useState<any[]>([])
+    const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false)
     const [campaignSearch, setCampaignSearch] = useState('')
     const [campaignCategoryFilter, setCampaignCategoryFilter] = useState<string>('all')
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
@@ -41,10 +43,12 @@ const CreateDesign = () => {
 
     useEffect(() => {
         const load = async () => {
+            setIsLoadingCampaigns(true)
             try {
                 const list = await listActiveCampaignsWithMeta();
                 setCampaigns(list)
             } catch {}
+            finally { setIsLoadingCampaigns(false) }
         }
         load()
     }, [])
@@ -223,7 +227,7 @@ const CreateDesign = () => {
                 setShowProcessingModal(false); setShowSuccessModal(true); setCountdown(15)
             const redirectPath = isNgo ? '/ngo-profile' : '/user-profile'
                 countdownRef.current = setInterval(() => { setCountdown((prev) => { if (prev <= 1) { if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null } navigate(redirectPath); return 0 } return prev - 1 }) }, 1000)
-            } catch (e) { setShowProcessingModal(false); console.error(e) }
+            } catch (e: any) { setShowProcessingModal(false); setShowErrorModal(true) }
         }).catch(() => { setShowProcessingModal(false) })
     }
     
@@ -291,6 +295,9 @@ const CreateDesign = () => {
                                 <Button variant="primary-bw" onClick={handleNext} disabled={!selectedCampaignId}>Next</Button>
                             </div>
                             <div className="max-h-80 overflow-auto divide-y rounded-lg border">
+                                {isLoadingCampaigns && campaigns.length === 0 && (
+                                    <div className="p-6 text-center text-gray-500">Loading campaigns...</div>
+                                )}
                                 {campaigns.filter(c => (campaignCategoryFilter === 'all' || (c.category || '').toLowerCase() === campaignCategoryFilter.toLowerCase())).filter(c => c.title.toLowerCase().includes(campaignSearch.toLowerCase()) || c.description.toLowerCase().includes(campaignSearch.toLowerCase())).map(c => {
                                     const campaignId = c.onchainId || c.id
                                     return (
@@ -302,14 +309,14 @@ const CreateDesign = () => {
                                                 )}
                                             </div>
                                             <div className="flex-1">
-                                                <div className="font-medium text-black">#{campaignId} · {c.title || 'Untitled'}</div>
+                                                <div className="font-medium text-black">{c.title || 'Untitled'}</div>
                                                 <div className="text-xs text-gray-600 line-clamp-2">{c.description}</div>
                                                 {c.category && (<div className="mt-1 text-[10px] inline-block px-2 py-0.5 bg-gray-100 rounded-full text-gray-700">{c.category}</div>)}
                                             </div>
                                         </div>
                         </button>
                                 )})}
-                                {campaigns.length === 0 && (<div className="p-6 text-center text-gray-500">No campaigns found</div>)}
+                                {!isLoadingCampaigns && campaigns.length === 0 && (<div className="p-6 text-center text-gray-500">No campaigns found</div>)}
                             </div>
                     </div>
                     )}
@@ -401,7 +408,7 @@ const CreateDesign = () => {
                             </div>
                             <div className="bg-white border border-gray-200 rounded-lg p-6">
                                 <div className="mb-6"><input type="text" value={pieceName} onChange={(e) => setPieceName(e.target.value)} placeholder="Name of Piece" className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent" /></div>
-                                <div className="mb-6"><div className="relative"><div className="px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black">Campaign: {selectedCampaignId != null ? (campaigns.find((c:any) => (c.onchainId || c.id) === selectedCampaignId)?.title || `#${selectedCampaignId}`) : '—'}</div></div></div>
+                                <div className="mb-6"><div className="relative"><div className="px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black">Campaign: {selectedCampaignId != null ? (campaigns.find((c:any) => (c.onchainId || c.id) === selectedCampaignId)?.title || 'Untitled') : '—'}</div></div></div>
                                 <div className="mb-8"><label className="block text-sm font-medium text-black mb-2">Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none" /></div>
                                 <div className="flex gap-3"><Button variant="secondary" size="lg" onClick={() => setCurrentStep(2)} className="flex-1 rounded-lg py-4 text-lg">Back</Button><Button variant="primary-bw" size="lg" onClick={handleFinish} className="flex-1 rounded-lg py-4 text-lg" disabled={!isStep2Valid() || selectedCampaignId == null}>{isEditMode ? 'Update Design' : 'Finish'}</Button></div>
                                     </div>
@@ -412,6 +419,7 @@ const CreateDesign = () => {
             <Footer />
             {showProcessingModal && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center"><div className="w-16 h-16 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><h2 className="text-2xl font-bold text-black mb-2">Creating Your Design...</h2><p className="text-gray-600 mb-6">Please wait while we upload your design and save it to the blockchain.</p></div></div>)}
             {showSuccessModal && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center"><CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" /><h2 className="text-2xl font-bold text-black mb-2">{isEditMode ? 'Design Updated Successfully!' : 'Design Created Successfully!'}</h2><p className="text-gray-600 mb-6">{isEditMode ? 'Your design has been updated and is ready for launch.' : 'Your design has been created and is ready for launch.'}</p><Button variant="primary-bw" size="lg" onClick={handleContinueToProfile} className="w-full rounded-lg py-3 text-lg">Continue to Profile</Button><p className="text-sm text-gray-500 mt-4">Redirecting automatically in {countdown} seconds...</p></div></div>)}
+            {showErrorModal && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center"><div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center"><XCircle className="w-8 h-8 text-red-600" /></div><h2 className="text-2xl font-bold text-black mb-2">We couldn’t create your design</h2><p className="text-gray-600 mb-6">Please check your connection and details, then try again.</p><Button variant="primary-bw" size="lg" className="w-full" onClick={() => setShowErrorModal(false)}>Close</Button></div></div>)}
         </div>
     )
 }
