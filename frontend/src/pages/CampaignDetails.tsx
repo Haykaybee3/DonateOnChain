@@ -43,17 +43,16 @@ const CampaignDetails = () => {
                     c.onchainId === parseInt(id || '1') ||
                     c.onchainId?.toString() === id
                 )
+                let baseCampaignObj = found || {};
                 try {
                     const numericId = BigInt(id || '0')
                     const chainCampaign = await onchainGetCampaign(numericId)
                     let amountRaised = found?.amountRaised || 0
-                    try {
-                        const donations = await getDonationsByCampaign(numericId)
-                        amountRaised = donations.totalRaisedHBAR
-                    } catch {}
-                    // Fetch metadata from IPFS
                     let metaImage = undefined;
                     let metaGoal = undefined;
+                    let metaTitle = '';
+                    let metaDesc = '';
+                    let metaLoaded = false;
                     try {
                         const metaCid = await getCampaignMetadataCid(numericId);
                         if (metaCid) {
@@ -61,37 +60,49 @@ const CampaignDetails = () => {
                             if (meta) {
                                 metaImage = meta.image;
                                 metaGoal = meta.goal;
+                                metaTitle = meta.title;
+                                metaDesc = meta.description;
+                                metaLoaded = true;
                             }
                         }
                     } catch {}
-                    found = {
-                        ...found,
+                    if (!chainCampaign && !metaLoaded) {
+                        setCampaign(null)
+                        setAllCampaigns(fallback.filter(c => (c.id !== parseInt(id || '1') && c.id?.toString() !== id)))
+                        return;
+                    }
+                    try {
+                        const donations = await getDonationsByCampaign(numericId)
+                        amountRaised = donations.totalRaisedHBAR
+                    } catch {}
+                    const campaignObj = {
+                        ...baseCampaignObj,
                         id: Number(numericId),
                         onchainId: Number(numericId),
-                        title: chainCampaign.title || found?.title,
-                        description: chainCampaign.description || found?.description,
-                        goal: metaGoal !== undefined ? metaGoal : (Number(chainCampaign.goalHBAR) / 1e18),
-                        ngoWallet: chainCampaign.ngo,
-                        image: metaImage || chainCampaign.image || found?.image,
+                        title: metaTitle || chainCampaign?.title || found?.title,
+                        description: metaDesc || chainCampaign?.description || found?.description,
+                        goal: metaGoal !== undefined ? metaGoal : (chainCampaign ? Number(chainCampaign.goalHBAR) / 1e18 : 0),
+                        ngoWallet: chainCampaign?.ngo,
+                        image: metaImage || chainCampaign?.image || found?.image,
                         amountRaised,
                         percentage: 0,
                         ngoName: found?.ngoName,
-                        active: chainCampaign.active ?? true,
+                        active: chainCampaign?.active ?? true,
                     }
-                    const goal = found.goal || 0
-                    found.percentage = goal > 0 ? (amountRaised / goal) * 100 : 0
+                    const goal = campaignObj.goal || 0
+                    campaignObj.percentage = goal > 0 ? (amountRaised / goal) * 100 : 0
+                    setCampaign(campaignObj)
+                    setAllCampaigns(fallback.filter(c => (c.id !== parseInt(id || '1') && c.id?.toString() !== id)))
+                    return;
                 } catch {}
+                // fallback (did not find onchain, try to recover from default)
                 setCampaign(found)
                 setAllCampaigns(fallback.filter(c => (c.id !== parseInt(id || '1') && c.id?.toString() !== id)))
             } catch (error) {
-                console.error('Error loading campaign:', error)
-               
-                const foundCampaign = defaultCampaigns.find(c => c.id === parseInt(id || '1'))
-                setCampaign(foundCampaign)
-                setAllCampaigns(defaultCampaigns.filter(c => c.id !== foundCampaign?.id))
+                setCampaign(null)
+                setAllCampaigns([])
             }
         }
-        
         loadCampaign()
     }, [id])
 
