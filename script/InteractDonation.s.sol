@@ -13,7 +13,6 @@ import {ProofNFT} from "../src/ProofNFT.sol";
 contract InteractDonation is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployerAddress = vm.addr(deployerPrivateKey);
 
         address adminRegistryAddr = vm.envAddress("ADMIN_REGISTRY");
         address ngoRegistryAddr = vm.envAddress("NGO_REGISTRY");

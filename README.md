@@ -109,6 +109,17 @@ test/
 - ✅ Safe HBAR transfers with error handling
 - ✅ CEI pattern (Checks-Effects-Interactions)
 
+## Audit Summary Scorecard
+
+| Audit Focus Area               | Coverage         | Notes                                          |
+|-------------------------------|------------------|------------------------------------------------|
+| Access Control & Guards        | Strong           | Centralized, granular, edge checks in place    |
+| Validation & State Transitions | Strong           | All key data validated, campaign/deps checked  |
+| Events & Custom Errors         | Strong           | All state changes/events & custom errors       |
+| Reentrancy + CEI               | Strong           | Covered where financial flows/critical         |
+| Hedera/HTS Return & Error      | Good/Strong      | Response codes checked, serial guard added     |
+| Gas/Readability                | Strong           | Constants used, s/gas nits fixed               |
+
 ## License
 
 MIT

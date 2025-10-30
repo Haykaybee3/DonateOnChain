@@ -62,6 +62,9 @@ contract ProofNFT is Ownable {
         if (responseCode != 22) {
             revert Errors.MintFailed(responseCode);
         }
+        if (serialNumbers.length == 0) {
+            revert Errors.MintFailed(responseCode);
+        }
 
         uint256 serialNumber = uint256(int256(serialNumbers[0]));
 

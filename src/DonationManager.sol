@@ -30,6 +30,17 @@ contract DonationManager is Ownable, ReentrancyGuard {
     address public platformWallet;
     address public hcsTopicId;
 
+    /// @notice Emitted after a successful donation and fund split.
+    /// @param donor Donor address
+    /// @param campaignId Campaign ID
+    /// @param totalAmount Amount donated
+    /// @param ngoAmount NGO allocation
+    /// @param designerAmount Designer allocation
+    /// @param platformAmount Platform allocation
+    /// @param ngoRecipient NGO recipient
+    /// @param designerRecipient Designer recipient
+    /// @param platformRecipient Platform wallet
+    /// @param nftSerialNumber NFT proof
     event DonationMade(
         address indexed donor,
         uint256 indexed campaignId,
@@ -49,6 +60,11 @@ contract DonationManager is Ownable, ReentrancyGuard {
     error TransferFailed(address recipient, uint256 amount);
     error HCSCallFailed(int64 responseCode);
 
+    /// @notice Constructor sets main immutable dependencies and platform wallet
+    /// @param initialOwner Owner (admin) address
+    /// @param _campaignRegistry Address of campaign registry contract
+    /// @param _proofNFT Address of proof NFT contract
+    /// @param _platformWallet Platform fee recipient address
     constructor(address initialOwner, address _campaignRegistry, address _proofNFT, address _platformWallet)
         Ownable(initialOwner)
     {
@@ -61,35 +77,35 @@ contract DonationManager is Ownable, ReentrancyGuard {
         platformWallet = payable(_platformWallet);
     }
 
+    /// @notice Donate HBAR to a campaign and receive NFT proof.
+    /// @dev Emits DonationMade. Splits value among NGO, designer, platform. Reverts on inactive, missing, or zero donation.
+    /// @param campaignId Target campaign
+    /// @param metadataHash Off-chain (IPFS) metadata hash (string)
+    /// @return nftSerialNumber Serial number of NFT proof minted
     function donate(uint256 campaignId, string calldata metadataHash) external payable nonReentrant returns (uint256) {
-        if (msg.value == 0) revert Errors.ZeroAmount();
+        uint256 value = msg.value;
+        if (value == 0) revert Errors.ZeroAmount();
 
-        (
-            address ngo,
-            address designer,
-            uint256 ngoShareBps,
-            uint256 designerShareBps,
-            uint256 platformShareBps,
-            bool active
-        ) = CAMPAIGN_REGISTRY.getCampaign(campaignId);
-        platformShareBps;
+        (address ngo, address designer, uint256 ngoShareBps, uint256 designerShareBps,, bool active) =
+            CAMPAIGN_REGISTRY.getCampaign(campaignId);
+        if (ngo == address(0) || designer == address(0)) revert Errors.CampaignNotFound(campaignId);
 
         if (!active) revert Errors.InactiveCampaign(campaignId);
 
-        uint256 ngoAmount = (msg.value * ngoShareBps) / MAX_BPS;
-        uint256 designerAmount = (msg.value * designerShareBps) / MAX_BPS;
-        uint256 platformAmount = msg.value - ngoAmount - designerAmount;
+        uint256 ngoAmount = (value * ngoShareBps) / MAX_BPS;
+        uint256 designerAmount = (value * designerShareBps) / MAX_BPS;
+        uint256 platformAmount = value - ngoAmount - designerAmount;
 
         _transferHbar(payable(ngo), ngoAmount);
         _transferHbar(payable(designer), designerAmount);
         _transferHbar(payable(platformWallet), platformAmount);
 
-        uint256 nftSerialNumber = PROOF_NFT.mintDonationNFT(msg.sender, campaignId, msg.value, metadataHash);
+        uint256 nftSerialNumber = PROOF_NFT.mintDonationNFT(msg.sender, campaignId, value, metadataHash);
 
         Donation memory donation = Donation({
             donor: msg.sender,
             campaignId: campaignId,
-            amount: msg.value,
+            amount: value,
             timestamp: block.timestamp,
             nftSerialNumber: nftSerialNumber
         });
@@ -100,13 +116,13 @@ contract DonationManager is Ownable, ReentrancyGuard {
         donationCount++;
 
         if (hcsTopicId != address(0)) {
-            _logToHCS(msg.sender, campaignId, msg.value, nftSerialNumber);
+            _logToHCS(msg.sender, campaignId, value, nftSerialNumber);
         }
 
         emit DonationMade(
             msg.sender,
             campaignId,
-            msg.value,
+            value,
             ngoAmount,
             designerAmount,
             platformAmount,
@@ -119,6 +135,8 @@ contract DonationManager is Ownable, ReentrancyGuard {
         return nftSerialNumber;
     }
 
+    /// @notice Change the wallet address that receives platform fees
+    /// @param newWallet The new platform wallet address
     function updatePlatformWallet(address newWallet) external onlyOwner {
         if (newWallet == address(0)) revert Errors.InvalidAddress(newWallet);
         address oldWallet = platformWallet;
@@ -126,11 +144,14 @@ contract DonationManager is Ownable, ReentrancyGuard {
         emit PlatformWalletUpdated(oldWallet, newWallet);
     }
 
+    /// @notice Set Hedera Consensus Service topic id for logging donations
+    /// @param topicId HCS topic (precompiled contract)
     function setHcsTopicId(address topicId) external onlyOwner {
         hcsTopicId = topicId;
         emit HCSTopicIdSet(topicId);
     }
 
+    /// @notice Disable HCS logging entirely
     function disableHCSLogging() external onlyOwner {
         hcsTopicId = address(0);
         emit HCSLoggingDisabled();
@@ -151,6 +172,12 @@ contract DonationManager is Ownable, ReentrancyGuard {
         if (responseCode != 22) revert HCSCallFailed(responseCode);
     }
 
+    /// @notice Get all donations made to a given campaign
+    /// @param campaignId The campaign id
+    /// @return donors Donor addresses
+    /// @return amounts Amount donated per donor
+    /// @return timestamps When each donation occurred
+    /// @return nftSerialNumbers NFT proof serial for each donation
     function getDonationsByCampaign(uint256 campaignId)
         external
         view
@@ -178,6 +205,12 @@ contract DonationManager is Ownable, ReentrancyGuard {
         }
     }
 
+    /// @notice Get all donations made by a particular donor
+    /// @param donor The donor address
+    /// @return campaignIds Array of campaign ids
+    /// @return amounts Array of amounts
+    /// @return timestamps Donation times
+    /// @return nftSerialNumbers NFT proof serials
     function getDonationsByDonor(address donor)
         external
         view

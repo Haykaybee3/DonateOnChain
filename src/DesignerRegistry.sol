@@ -124,6 +124,7 @@ contract DesignerRegistry is Ownable {
     }
 
     function approveDesigner(address wallet) external onlyAdmin {
+        if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (!pendingDesigners[wallet].isPending) revert Errors.DesignerNotPending(wallet);
 
         designers[wallet] = pendingDesigners[wallet];
@@ -135,6 +136,7 @@ contract DesignerRegistry is Ownable {
     }
 
     function rejectDesigner(address wallet) external onlyAdmin {
+        if (wallet == address(0)) revert Errors.InvalidAddress(wallet);
         if (!pendingDesigners[wallet].isPending) revert Errors.DesignerNotPending(wallet);
 
         delete pendingDesigners[wallet];
