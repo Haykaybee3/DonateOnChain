@@ -135,7 +135,7 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
         if (bytes(designName).length == 0 || bytes(description).length == 0) revert Errors.EmptyMetadata();
         if (bytes(designFileHash).length == 0 || bytes(metadataHash).length == 0) revert Errors.EmptyMetadata();
 
-        (address ngo, , , , , bool active) = CAMPAIGN_REGISTRY.getCampaign(campaignId);
+        (address ngo,,,,, bool active) = CAMPAIGN_REGISTRY.getCampaign(campaignId);
 
         if (!active) revert Errors.InactiveCampaign(campaignId);
         if (ngo == address(0)) revert Errors.CampaignNotFound(campaignId);
@@ -178,7 +178,7 @@ contract DesignMarketplace is Ownable, ReentrancyGuard {
             revert Errors.InsufficientPayment(design.price, msg.value);
         }
 
-        (address ngo, , uint256 ngoShareBps, uint256 designerShareBps, , bool active) =
+        (address ngo,, uint256 ngoShareBps, uint256 designerShareBps,, bool active) =
             CAMPAIGN_REGISTRY.getCampaign(design.campaignId);
         if (ngo == address(0)) revert Errors.CampaignNotFound(design.campaignId);
         if (!active) revert Errors.InactiveCampaign(design.campaignId);

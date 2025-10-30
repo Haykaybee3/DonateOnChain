@@ -86,14 +86,8 @@ contract DonationManager is Ownable, ReentrancyGuard {
         uint256 value = msg.value;
         if (value == 0) revert Errors.ZeroAmount();
 
-        (
-            address ngo,
-            address designer,
-            uint256 ngoShareBps,
-            uint256 designerShareBps,
-            ,
-            bool active
-        ) = CAMPAIGN_REGISTRY.getCampaign(campaignId);
+        (address ngo, address designer, uint256 ngoShareBps, uint256 designerShareBps,, bool active) =
+            CAMPAIGN_REGISTRY.getCampaign(campaignId);
         if (ngo == address(0) || designer == address(0)) revert Errors.CampaignNotFound(campaignId);
 
         if (!active) revert Errors.InactiveCampaign(campaignId);
