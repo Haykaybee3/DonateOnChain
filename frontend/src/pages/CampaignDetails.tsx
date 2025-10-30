@@ -7,10 +7,11 @@ import Banner from '../component/Banner'
 import CampaignCard from '../component/CampaignCard'
 import Button from '../component/Button'
 import EditCampaignModal from '../component/EditCampaignModal'
-import { Loader2, Check, Gift } from 'lucide-react'
+import { Loader2, Check, Gift, X, Trash } from 'lucide-react'
 import { campaigns as defaultCampaigns } from '../data/databank'
 import { getAllCampaigns, saveCampaign } from '../utils/firebaseStorage'
-import { donate, getCampaign as onchainGetCampaign, getDonationsByCampaign } from '../onchain/adapter'
+import { donate, getCampaign as onchainGetCampaign, getDonationsByCampaign, updateCampaignOnChain, deactivateCampaign } from '../onchain/adapter'
+import { uploadFileToIPFS } from '../utils/ipfs';
 
 const CampaignDetails = () => {
     const { id } = useParams<{ id: string }>()
@@ -27,6 +28,9 @@ const CampaignDetails = () => {
     const [donationSuccess, setDonationSuccess] = useState(false)
     const [donationError, setDonationError] = useState<string | null>(null)
     const [txHash, setTxHash] = useState<string | null>(null)
+    const [isCampaignCreateError, setIsCampaignCreateError] = useState(false);
+    const [campaignErrorText, setCampaignErrorText] = useState('');
+
 
     useEffect(() => {
         const loadCampaign = async () => {
@@ -190,9 +194,9 @@ const CampaignDetails = () => {
                   
                     <div className="mb-12">
                         {(() => {
-                            const goal = Number(campaign.goal || campaign.target || 0)
-                            const amountRaised = Number(campaign.amountRaised || 0)
-                            const percentage = campaign.percentage || (goal > 0 ? (amountRaised / goal) * 100 : 0)
+                            const goal = Number(campaign.goal || campaign.target || 0);
+                            const amountRaised = Number(campaign.amountRaised || 0);
+                            const percentage = campaign.percentage || (goal > 0 ? (amountRaised / goal) * 100 : 0);
                             return (
                                 <>
                                     <div className="relative h-16 rounded-full overflow-hidden bg-white border-2 border-gray-300">
@@ -215,7 +219,7 @@ const CampaignDetails = () => {
                                     
                                   
                                     <div className="mt-2 text-right">
-                                        <span className="text-base text-gray-600">of {goal.toFixed(2)} HBAR</span>
+                                        <span className="text-base text-gray-600">Target: {goal.toFixed(2)} HBAR</span>
                                     </div>
                                 </>
                             )
@@ -224,14 +228,34 @@ const CampaignDetails = () => {
                   
                     <div className="mb-12">
                         {isCampaignCreator && isConnected ? (
-                            <Button 
-                                variant="primary-bw"
-                                size="lg"
-                                onClick={() => setIsEditModalOpen(true)}
-                                className="w-full rounded-lg py-4 text-lg"
-                            >
-                                Edit Campaign
-                            </Button>
+                            <div className="flex gap-2 mb-4">
+                                <Button
+                                    variant="primary-bw"
+                                    size="lg"
+                                    onClick={() => setIsEditModalOpen(true)}
+                                    className="flex-1 rounded-lg py-4 text-lg"
+                                >
+                                    Edit Campaign
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    size="lg"
+                                    onClick={async () => {
+                                        if (!window.confirm('Are you sure you want to delete this campaign? This action is irreversible.')) return;
+                                        try {
+                                            await deactivateCampaign(BigInt(campaign.onchainId || campaign.id));
+                                            setCampaign({ ...campaign, active: false });
+                                            navigate('/user-profile');
+                                        } catch (e) {
+                                            alert('Failed to delete campaign.');
+                                        }
+                                    }}
+                                    className="!px-4 !py-4 items-center justify-center flex"
+                                    aria-label="Delete Campaign"
+                                >
+                                    <Trash size={24} />
+                                </Button>
+                            </div>
                         ) : (
                             <>
                                 {campaign.active === false && (
@@ -352,44 +376,25 @@ const CampaignDetails = () => {
                     onSubmit={async (campaignData: any) => {
                         setIsUploadingCampaign(true)
                         try {
-                            const updatedCampaign = {
-                                ...campaign,
-                                title: campaignData.campaignTitle || campaign.title,
-                                category: campaignData.category ? campaignData.category.toLowerCase().replace(/\s+/g, '-') : campaign.category,
-                                description: campaignData.description || campaign.description,
-                                goal: campaignData.target || campaign.goal,
-                                coverImageFile: campaignData.coverImageFile,
-                                ngoName: campaign.ngoName,
-                                ngoWallet: campaign.ngoWallet,
-                                amountRaised: campaign.amountRaised,
-                                percentage: campaign.percentage,
-                                createdAt: campaign.createdAt
+                            let imageHash = campaign.image;
+                            if (campaignData.coverImageFile) {
+                                imageHash = await uploadFileToIPFS(campaignData.coverImageFile);
                             }
-                            
-                            await saveCampaign(updatedCampaign)
-                            console.log('Campaign updated successfully')
-                            
-                           
-                            await new Promise(resolve => setTimeout(resolve, 1000))
-                            
-                         
-                            const allCampaigns = await getAllCampaigns()
-                            const updated = allCampaigns.find((c: any) => 
-                                c.id === campaign.id || c.id?.toString() === campaign.id?.toString() || c.id?.toString() === id
-                            )
-                            if (updated) {
-                                setCampaign(updated)
-                            }
-                            
-                            setIsUploadingCampaign(false)
-                            setIsEditModalOpen(false)
-                            setIsCampaignUpdated(true)
-                            setTimeout(() => {
-                                setIsCampaignUpdated(false)
-                            }, 3000)
-                        } catch (error) {
-                            console.error('Error updating campaign:', error)
-                            setIsUploadingCampaign(false)
+                            await updateCampaignOnChain(
+                                BigInt(campaign.id),
+                                campaignData.campaignTitle || campaign.title,
+                                campaignData.description || campaign.description,
+                                imageHash || ''
+                            );
+                            setIsCampaignUpdated(true);
+                            setTimeout(() => setIsCampaignUpdated(false), 4000);
+                            setIsEditModalOpen(false);
+                            // Optionally refetch campaign here
+                        } catch (err) {
+                            setIsCampaignCreateError(true)
+                            setCampaignErrorText(err?.message || 'Failed to update campaign');
+                        } finally {
+                            setIsUploadingCampaign(false);
                         }
                     }}
                 />

@@ -712,6 +712,21 @@ export async function createDesign(params: { campaignId: bigint; designName: str
   }
 }
 
+export async function updateCampaignOnChain(
+  campaignId: bigint,
+  title: string,
+  description: string,
+  imageHash: string,
+): Promise<any> {
+  const hash = await write({
+    address: addresses.CAMPAIGN_REGISTRY as HexAddress,
+    abi: abis.CampaignRegistry as any,
+    functionName: 'updateCampaign',
+    args: [campaignId, title, description, imageHash],
+  });
+  return await wait(hash);
+}
+
 export async function adminAddAdmin(admin: HexAddress) {
   const hash = await write({ address: addresses.ADMIN_REGISTRY as HexAddress, abi: abis.AdminRegistry as any, functionName: 'addAdmin', args: [admin] })
   return await wait(hash)

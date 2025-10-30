@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react';
 import { products, causes, creators } from '../data/databank';
 import { getAllGlobalDesigns, getAllCampaigns } from '../utils/firebaseStorage';
 import { syncCampaignsWithOnChain } from '../onchain/adapter';
+import { listAllCampaignsFromChain } from '../onchain/adapter';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -91,19 +92,15 @@ const Home = () => {
             
            
             try {
-                const firebaseCampaigns = await getAllCampaigns();
-                const syncedCampaigns = await syncCampaignsWithOnChain(firebaseCampaigns);
-                
-                const sortedCampaigns = syncedCampaigns
+                const onchainCampaigns = await listAllCampaignsFromChain();
+                const sortedCampaigns = onchainCampaigns
                     .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-        
                 const userCampaignsOnly = sortedCampaigns.slice(0, 5);
                 const mockCampaignsNeeded = 5 - userCampaignsOnly.length;
                 const recentCampaigns = [
                     ...userCampaignsOnly,
                     ...causes.slice(0, mockCampaignsNeeded)
                 ];
-        
                 setPopularCampaigns(recentCampaigns);
             } catch (error) {
                 console.error('Error loading campaigns:', error);

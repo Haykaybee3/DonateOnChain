@@ -645,97 +645,16 @@ export const migrateDesignImagesToFirebase = async (design: any, walletAddress: 
 }
 
 
-export const uploadCampaignImageToFirebase = async (campaignId: string, imageDataUrl: string): Promise<string | null> => {
-  try {
-    
-    
-    const response = await fetch(imageDataUrl)
-    let blob = await response.blob()
-    
-   
-    if (blob.type !== 'image/png') {
-     
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      if (ctx) {
-        const img = new Image()
-        await new Promise((resolve, reject) => {
-          img.onload = resolve
-          img.onerror = reject
-          img.src = imageDataUrl
-        })
-        canvas.width = img.width
-        canvas.height = img.height
-        ctx.drawImage(img, 0, 0)
-        blob = await new Promise((resolve) => {
-          canvas.toBlob((b) => resolve(b || blob), 'image/png')
-        })
-      }
-    }
-    
-   
-    const fileName = `${campaignId}/cover.png`
-    const storageRef = ref(storage, `campaignImages/${fileName}`)
-    
-    await uploadBytes(storageRef, blob)
-    const downloadURL = await getDownloadURL(storageRef)
-    return downloadURL
-  } catch (error) {
-    console.error(`Error uploading campaign image:`, error)
-    return null
-  }
+export const uploadCampaignImageToFirebase = async () => {
+  return null;
 }
 
 export const saveCampaign = async (campaignData: any) => {
-  try {
-    let imageUrl = null
-    
-    if (campaignData.coverImageFile) {
-      try {
-       
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onloadend = () => {
-            const result = reader.result as string
-            resolve(result)
-          }
-          reader.onerror = reject
-          reader.readAsDataURL(campaignData.coverImageFile)
-        })
-       
-        imageUrl = await uploadCampaignImageToFirebase(campaignData.id.toString(), dataUrl)
-      } catch (error) {
-        console.error('Error processing image:', error)
-      }
-    }
-    
-    const campaignToSave = {
-      ...campaignData,
-      image: imageUrl || null
-    }
-    delete campaignToSave.coverImageFile
-    
-    await saveToFirebase('campaigns', campaignData.id.toString(), campaignToSave)
-    
-    const existingCampaigns = JSON.parse(localStorage.getItem('campaigns') || '[]')
-    existingCampaigns.push(campaignToSave)
-    localStorage.setItem('campaigns', JSON.stringify(existingCampaigns))
-    
-    return campaignToSave
-  } catch (error) {
-    console.error('Error saving campaign:', error)
-    return false
-  }
+  return false;
 }
 
 export const getAllCampaigns = async () => {
-  try {
-    const result = await getAllFromFirebase('campaigns')
-    return result
-  } catch (error) {
-    console.error('Error getting campaigns:', error)
-    return JSON.parse(localStorage.getItem('campaigns') || '[]')
-  }
+  return [];
 }
 
 export const deleteCampaign = async (campaignId: number | string) => {

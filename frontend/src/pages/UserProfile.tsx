@@ -257,15 +257,12 @@ const UserProfile = () => {
         const loadCampaigns = async () => {
             if (address && isConnected && isNgo) {
                 try {
-                    // Prefer on-chain source in production
                     const chainCampaigns = await listAllCampaignsFromChain();
                     const userChain = (chainCampaigns || []).filter((c: any) => c.ngoWallet?.toLowerCase() === address.toLowerCase());
-                    if (userChain.length) {
-                        setCreatedCampaigns(userChain);
-                        return;
-                    }
+                    setCreatedCampaigns(userChain);
+                    return;
                 } catch (e) {
-                    console.warn('Failed on-chain campaign load, falling back to Firebase/local', e);
+                    console.error('Failed on-chain campaign load', e);
                 }
                 try {
                     const allCampaigns = await getAllCampaigns();
@@ -477,23 +474,24 @@ const UserProfile = () => {
         try {
             if (!address) throw new Error('Wallet not connected');
             let imageCid: string | null = null
-            if (campaignData.coverImageFile) {
-                imageCid = await uploadFileToIPFS(campaignData.coverImageFile)
-                if (!imageCid) { console.warn('Image upload failed; proceeding without cover image') }
+            if (!campaignData.coverImageFile) {
+              throw new Error('Campaign image is required')
             }
-            const baseMeta = { title: campaignData.campaignTitle, category: campaignData.category, description: campaignData.description, image: imageCid ? `ipfs://${imageCid}` : null }
-            const contentHash = keccak256(stringToHex(JSON.stringify(baseMeta)))
-            const meta = { ...baseMeta, contentHash }
-            const metadataCid = await uploadMetadataToIPFS(meta)
-            if (!metadataCid) throw new Error('Failed to upload metadata to IPFS')
-            
-            if (imageCid) {
-                await storeHashViaRelayer(imageCid, address!)
+            imageCid = await uploadFileToIPFS(campaignData.coverImageFile)
+            if (!imageCid) {
+              throw new Error('Image upload failed; campaign will not be created')
             }
-            await storeHashViaRelayer(metadataCid, address!)
-            
-            const targetHBAR = parseFloat((campaignData.target || '0').toString().replace(/[^0-9.]/g, '')) || 0
-            const { campaignId, receipt } = await createCampaignByNGO({ designer: address as `0x${string}`, title: campaignData.campaignTitle, description: campaignData.description, imageCid: imageCid || '', metadataCid, targetHBAR })
+            const imageUrl = `https://ipfs.io/ipfs/${imageCid}`; // Always use HTTP for src
+            // During campaign creation: create the onchain metadata object with 'goal' clearly set
+            const goal = parseFloat((campaignData.target || '0').toString().replace(/[^0-9.]/g, '')) || 0
+            const baseMeta = { title: campaignData.campaignTitle, category: campaignData.category, description: campaignData.description, image: imageUrl, goal };
+            const contentHash = keccak256(stringToHex(JSON.stringify(baseMeta)));
+            const meta = { ...baseMeta, contentHash };
+            const metadataCid = await uploadMetadataToIPFS(meta);
+            if (!metadataCid) throw new Error('Failed to upload metadata to IPFS');
+            await storeHashViaRelayer(imageCid, address!);
+            await storeHashViaRelayer(metadataCid, address!);
+            const { campaignId, receipt } = await createCampaignByNGO({ designer: address as `0x${string}`, title: campaignData.campaignTitle, description: campaignData.description, imageCid: imageCid, metadataCid, targetHBAR: goal });
             
             const receiptStatus = receipt?.status as string | number | undefined
             if (!receipt || receiptStatus === 'reverted' || receiptStatus === 0 || receiptStatus === '0x0') {
@@ -531,6 +529,12 @@ const UserProfile = () => {
             }
             setIsCampaignCreatedSuccessfully(true)
             setIsCreateCampaignModalOpen(false)
+            // New logic: refetch campaigns after creation
+            do {
+              const chainCampaigns = await listAllCampaignsFromChain();
+              const userChain = (chainCampaigns || []).filter((c: any) => c.ngoWallet?.toLowerCase() === address.toLowerCase());
+              setCreatedCampaigns(userChain);
+            } while(false);
         } catch (err: any) {
             setIsCampaignCreateError(true)
             setCampaignErrorText(err?.message || 'Failed to create campaign')
