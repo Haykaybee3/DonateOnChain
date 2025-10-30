@@ -16,6 +16,25 @@ import { products, creators } from '../data/databank';
 import { getAllGlobalDesigns } from '../utils/firebaseStorage';
 import { listAllCampaignsFromChain, getUserRoles } from '../onchain/adapter';
 
+const CACHE_TTL_MS = 5 * 60 * 1000
+
+const getCache = (key: string) => {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    try {
+        const parsed = JSON.parse(raw)
+        if (!parsed || !parsed.data || !parsed.ts) return null
+        if (Date.now() - parsed.ts > CACHE_TTL_MS) return null
+        return parsed.data
+    } catch { return null }
+}
+
+const setCache = (key: string, data: any) => {
+    try {
+        localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }))
+    } catch {}
+}
+
 const Home = () => {
     const navigate = useNavigate();
     const { address, isConnected } = useAccount()
@@ -93,11 +112,17 @@ const Home = () => {
             
            
             try {
+                const cacheKey = 'home_popular_campaigns'
+                const cached = getCache(cacheKey)
+                if (cached) {
+                    setPopularCampaigns(cached)
+                }
                 const onchainCampaigns = await listAllCampaignsFromChain();
                 const sortedCampaigns = onchainCampaigns
                     .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
                 const topCampaigns = sortedCampaigns.slice(0, 5);
                 setPopularCampaigns(topCampaigns);
+                setCache(cacheKey, topCampaigns)
             } catch (error) {
                 console.error('Error loading campaigns:', error);
                 setPopularCampaigns([]);
@@ -395,7 +420,7 @@ src="/shirtfront.png"
             const target = Number(campaign.target || 0)
             const amountRaised = Number(campaign.amountRaised || 0)
             const percentage = campaign.percentage || (target > 0 ? (amountRaised / target) * 100 : 0)
-            const imageUrl = campaign.image || campaign.coverImageFile || '/src/assets/Clothimg.png'
+            const imageUrl = campaign.image || campaign.coverImageFile
             
             return (
               <CampaignCard

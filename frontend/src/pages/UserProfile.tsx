@@ -6,7 +6,7 @@ import { Plus, X, Camera, Copy, Check, Loader2, XCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
-import { getUserDesigns, saveUserProfileWithImages, getUserProfile, migrateDesignImagesToFirebase, getDesignerApplicationByWallet, getNgoApplicationByWallet, getOrdersByWallet } from '../utils/firebaseStorage';
+import { getUserDesigns, saveUserProfileWithImages, getUserProfile, migrateDesignImagesToFirebase, getOrdersByWallet } from '../utils/firebaseStorage';
 import { getUserProofNFTs } from '../onchain/adapter';
 import { getUserRoles, createCampaignByNGO } from '../onchain/adapter';
 import { listAllCampaignsFromChain } from '../onchain/adapter';
@@ -62,8 +62,7 @@ const UserProfile = () => {
     });
     const [isDesigner, setIsDesigner] = useState(false);
     const [isNgo, setIsNgo] = useState(false);
-    const [designerApplication, setDesignerApplication] = useState<any>(null);
-    const [ngoApplication, setNgoApplication] = useState<any>(null);
+    
     const [createdCampaigns, setCreatedCampaigns] = useState<any[]>([]);
     const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
     const [orders, setOrders] = useState<any[]>([]);
@@ -167,33 +166,7 @@ const UserProfile = () => {
         return () => clearInterval(interval);
     }, [address, isConnected]);
 
-    useEffect(() => {
-        const checkApplications = async () => {
-            if (address && isConnected) {
-                try {
-                    if (!isDesigner) {
-                        const designerApp = await getDesignerApplicationByWallet(address);
-                        console.log('📝 Designer application:', designerApp);
-                        setDesignerApplication(designerApp);
-                    } else {
-                        console.log('✅ User is verified designer on-chain, skipping application check');
-                        setDesignerApplication(null);
-                    }
-                    if (!isNgo) {
-                        const ngoApp = await getNgoApplicationByWallet(address);
-                        console.log('📝 NGO application:', ngoApp);
-                        setNgoApplication(ngoApp);
-                    } else {
-                        console.log('✅ User is verified NGO on-chain, skipping application check');
-                        setNgoApplication(null);
-                    }
-                } catch (error) {
-                    console.error('Error checking applications:', error);
-                }
-            }
-        };
-        checkApplications();
-    }, [address, isConnected, isDesigner, isNgo]);
+    
    
     useEffect(() => {
         const loadDesigns = async () => {
@@ -598,15 +571,6 @@ const UserProfile = () => {
                                     <Plus size={20} />
                                     Create Design
                                 </Button>
-                            ) : designerApplication ? (
-                                <Button 
-                                    variant="secondary" 
-                                    size="lg" 
-                                    className="gap-2" 
-                                    onClick={() => navigate('/become-a-designer')}
-                                >
-                                    View Designer Application
-                                </Button>
                             ) : (
                                 <Button 
                                     variant="secondary" 
@@ -628,15 +592,6 @@ const UserProfile = () => {
                                 >
                                     <Plus size={20} />
                                     Create Campaign
-                                </Button>
-                            ) : ngoApplication ? (
-                                <Button 
-                                    variant="secondary" 
-                                    size="lg" 
-                                    className="gap-2" 
-                                    onClick={() => navigate('/become-an-ngo')}
-                                >
-                                    View NGO Application
                                 </Button>
                             ) : (
                                 <Button 
@@ -882,15 +837,6 @@ const UserProfile = () => {
                                         >
                                             <Plus size={20} />
                                             Create Design
-                                        </Button>
-                                    ) : designerApplication ? (
-                                        <Button
-                                            variant="secondary"
-                                            size="lg"
-                                            onClick={() => navigate('/become-a-designer')}
-                                            className="gap-2"
-                                        >
-                                            View Designer Application
                                         </Button>
                                     ) : (
                                         <Button

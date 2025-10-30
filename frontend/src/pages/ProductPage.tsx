@@ -8,7 +8,7 @@ import ProductCard from '../component/ProductCard'
 import { products } from '../data/databank'
 import { ChevronDown, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCart } from '../context/CartContext'
-import { getUserDesigns, getNGODesigns, getAllGlobalDesigns, getUserProfile, getNgoProfile, getDesignIndex } from '../utils/firebaseStorage'
+import { getUserDesigns, getNGODesigns, getAllGlobalDesigns, getDesignIndex } from '../utils/firebaseStorage'
 import { getDesignById, getDesignPrice } from '../onchain/adapter'
 
 const ProductPage = () => {
@@ -87,46 +87,18 @@ const ProductPage = () => {
     useEffect(() => {
         const loadCreatorName = async () => {
             if (customDesign && customDesign.walletAddress) {
-                if (customDesign.isNgo) {
-                    try {
-                        const ngoProfile = await getNgoProfile(customDesign.walletAddress)
-                        if (ngoProfile && ngoProfile.name) { setProfileName(ngoProfile.name); return }
-                    } catch {}
-                    const ngos = JSON.parse(localStorage.getItem('ngos') || '[]')
-                    const matchingNgo = ngos.find((ngo: any) => 
-                        ngo.walletAddress?.toLowerCase() === customDesign.walletAddress?.toLowerCase() ||
-                        ngo.connectedWalletAddress?.toLowerCase() === customDesign.walletAddress?.toLowerCase()
-                    )
-                    if (matchingNgo) setProfileName(matchingNgo.ngoName)
-                    else setProfileName('An NGO')
-                } else {
-                    try {
-                        const userProfile = await getUserProfile(customDesign.walletAddress)
-                        if (userProfile && userProfile.name) { setProfileName(userProfile.name); return }
-                    } catch {}
-                    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-                    if (userProfile && userProfile.name && customDesign.walletAddress === address) setProfileName(userProfile.name)
-                    else setProfileName('A User')
-                }
+                setProfileName(customDesign.isNgo ? 'An NGO' : 'A Designer')
             }
         }
         loadCreatorName()
-    }, [customDesign, isConnected, address])
+    }, [customDesign])
    
     useEffect(() => {
         if (customDesign && isConnected && address) {
             const isOwner = customDesign.walletAddress?.toLowerCase() === address.toLowerCase() || customDesign.connectedWalletAddress?.toLowerCase() === address.toLowerCase()
             setIsMyDesign(isOwner)
         } else if (customDesign && !isConnected) {
-            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-            const ngos = JSON.parse(localStorage.getItem('ngos') || '[]')
-            if (customDesign.isNgo) {
-                const matchingNgo = ngos.find((ngo: any) => 
-                    ngo.walletAddress?.toLowerCase() === customDesign.walletAddress?.toLowerCase() ||
-                    ngo.connectedWalletAddress?.toLowerCase() === customDesign.walletAddress?.toLowerCase()
-                )
-                setIsMyDesign(!!matchingNgo)
-            } else if (userProfile && userProfile.name) { setIsMyDesign(true) } else { setIsMyDesign(false) }
+            setIsMyDesign(false)
         }
     }, [customDesign, isConnected, address])
    
