@@ -123,3 +123,10 @@ test/
 ## License
 
 MIT
+
+## Pitch Deck
+(https://drive.google.com/drive/folders/1f1D9xZ-WepsuDXEhkqD5jvA_mneYSCTY?usp=drive_link)
+
+## Youtube Demo
+(https://youtu.be/jBzNm6H1OXk)
+
